@@ -1,4 +1,5 @@
 import {createRaceCourses} from './race-courses.js';
+import {RACE_DURATION,RACE_DISQUALIFIED,rankRaceEntries} from './race-rules.js';
 import {FieldAudio} from './race-audio.js';
 import {cloud} from './cloud.js';
 
@@ -202,19 +203,18 @@ export function initRace(api){
       type:'YOU',progress:serverOwn?.progress??progress(),finish:serverOwn?serverOwn.finish:r.finishTime};
     const humans=r.online?room.players.filter(p=>p.id!==room.me).map(p=>({...p,type:'FRIEND',finish:p.finish,
       name:p.name+(p.connected?'':' (offline)')})):[];
-    const list=[own,...humans,...r.bots];
-    list.sort((a,b)=>(a.finish!==null&&b.finish!==null?a.finish-b.finish:a.finish!==null?-1:b.finish!==null?1:b.progress-a.progress)||a.id.localeCompare(b.id));
+    const list=rankRaceEntries([own,...humans,...r.bots]);
     r.entries=list;return list;
   }
   function drawBoard(){
     const list=entries();
-    $('raceStandings').innerHTML=list.map((e,i)=>`<div class="race-standing ${e.type==='YOU'?'is-you':''}"><b>${i+1}</b><span>${escape(e.name)}<small>${e.type}</small></span><strong>${e.finish!==null?e.finish.toFixed(1)+'s':Math.floor(e.progress*100)+'%'}</strong></div>`).join('');
+    $('raceStandings').innerHTML=list.map((e,i)=>`<div class="race-standing ${e.type==='YOU'?'is-you':''}"><b>${i+1}</b><span>${escape(e.name)}<small>${e.type}${e.disqualified?' · AT RISK':''}</small></span><strong>${e.finish!==null?e.finish.toFixed(1)+'s':Math.floor(e.progress*100)+'%'}</strong></div>`).join('');
     $('hudScore').textContent=Math.floor(progress()*100)+'%';
   }
   r.onBegin=()=>{};
   r.complete=()=>{
     if(r.finished)return;
-    r.finished=true;r.finishTime=Math.min(60,r.elapsed);
+    r.finished=true;r.finishTime=Math.min(RACE_DURATION,r.elapsed);
     const player=api.state().player;player.position.y=0;player.userData.pose='stand';api.animate(player,false,0,false);
     api.clearKeys();$('hudObjective').textContent='FINISHED · watching the squad until 60 seconds';
     api.say('FINISH! '+r.finishTime.toFixed(2)+'s','good',2.5);
@@ -232,8 +232,8 @@ export function initRace(api){
       roundStarted=true;api.clearKeys();api.say('GO!','good',.8);
       $('raceCountdown').classList.add('hidden');api.vo('start1');
     }
-    r.elapsed=Math.min(60,r.elapsed);
-    if(r.elapsed>=60){
+    r.elapsed=Math.min(RACE_DURATION,r.elapsed);
+    if(r.elapsed>=RACE_DURATION){
       r.afterUpdate(0);end();return false;
     }
     if(r.finished)api.clearKeys();
@@ -267,7 +267,7 @@ export function initRace(api){
   };
   r.retry=()=>r.online?r.open():start(r.course);
   function end(){
-    ended=true;r.elapsed=60;api.clearKeys();audio.stop();
+    ended=true;r.elapsed=RACE_DURATION;api.clearKeys();audio.stop();
     $('raceBoard').classList.add('hidden');$('raceCountdown').classList.add('hidden');
     api.setMode('result');api.show('raceResult');drawResults();
     $('raceRewardText').textContent='Saving match earnings…';
@@ -286,10 +286,10 @@ export function initRace(api){
     api.vo('complete1');
   }
   function drawResults(){
-    const list=entries(),rank=list.findIndex(e=>e.type==='YOU')+1;
-    $('raceResultTitle').textContent=rank===1?'MISSION: FIRST PLACE':'RACE COMPLETE';
-    $('raceResultText').textContent=courses[r.course].name+' · 60.00-second round · You placed '+rank+' of '+list.length+'.';
-    $('raceResults').innerHTML=list.map((e,i)=>`<div class="result-racer ${e.type==='YOU'?'is-you':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${escape(e.name)}<small>${e.type}</small></span><strong>${e.finish!==null?e.finish.toFixed(2)+'s':Math.floor(e.progress*100)+'% / DNF'}</strong></div>`).join('');
+    const list=entries(),own=list.find(e=>e.type==='YOU'),rank=own.place;
+    $('raceResultTitle').textContent=own.disqualified?'DISQUALIFIED':rank===1?'MISSION: FIRST PLACE':'QUALIFIED';
+    $('raceResultText').textContent=courses[r.course].name+' · '+RACE_DURATION.toFixed(2)+'-second round · You placed '+rank+' of '+list.length+'. Bottom '+RACE_DISQUALIFIED+' disqualified.';
+    $('raceResults').innerHTML=list.map((e,i)=>`<div class="result-racer ${e.disqualified?'is-disqualified':''} ${e.type==='YOU'?'is-you':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${escape(e.name)}<small>${e.type} · ${e.disqualified?'DISQUALIFIED':'QUALIFIED'}</small></span><strong>${e.finish!==null?e.finish.toFixed(2)+'s':Math.floor(e.progress*100)+'% / DNF'}</strong></div>`).join('');
     $('raceAgain').textContent=r.online?'New room / race':'Race again';
   }
   $('raceAgain').onclick=()=>{if(r.online)r.open();else start(r.course);};
@@ -298,8 +298,8 @@ export function initRace(api){
   r.isOnline=()=>r.active&&r.online;
   r.audio=audio;r.courses=courses;r.progress=progress;
   r.text=()=>({active:r.active,online:r.online,course:r.course+1,courseCount:courses.length,
-    countdown:Math.max(0,-r.elapsed),elapsed:+r.elapsed.toFixed(2),duration:60,finished:r.finished,
-    finishTime:r.finishTime,progress:progress(),room:room?.code,standings:r.entries.map(({name,type,progress,finish})=>({name,type,progress,finish})),
+    countdown:Math.max(0,-r.elapsed),elapsed:+r.elapsed.toFixed(2),duration:RACE_DURATION,finished:r.finished,
+    finishTime:r.finishTime,progress:progress(),room:room?.code,standings:r.entries.map(({name,type,progress,finish,place,disqualified})=>({name,type,progress,finish,place,status:ended?(disqualified?'disqualified':'qualified'):(disqualified?'at risk':'racing')})),
     audio:{mode:audio.mode,volume:audio.volume}});
   return r;
 }

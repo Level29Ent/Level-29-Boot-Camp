@@ -46,3 +46,5 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none!important}button:fo
 }
 @media(max-height:620px) and (min-width:701px){.title-content .logo{display:none}.title-content .game-title{font-size:72px}.title-content .tagline{font-size:17px}.title-content .menu{gap:6px;margin-top:16px}.title-content .btn{padding:9px 18px}.sheet{max-height:95vh}.race-standing{padding:4px 0}}
 @media(prefers-reduced-motion:reduce){.title-art{animation:none}}
+
+.result-racer.is-disqualified{border-left:3px solid #ff9c8c;padding-left:9px}.result-racer.is-disqualified small{color:#ff9c8c}

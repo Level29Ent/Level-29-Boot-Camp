@@ -1,4 +1,5 @@
 import {OBSTACLES} from './campaign.js';
+import {RACE_DURATION,RACE_DISQUALIFIED} from './race-rules.js';
 
 const environments = ['course','forest','coast','combat','mountain','night','range','crucible'];
 const names = ['Iron','Thunder','Raider','Viper','Spartan','Bulldog','Storm','Saber','Frost','Ghost'];
@@ -11,21 +12,21 @@ export function createRaceCourses(){
     let types,signature;
     do{
       const bag=pool.slice();types=[];
-      for(let k=0;k<5+i%2;k++)types.push(bag.splice(Math.floor(rand()*bag.length),1)[0]);
-      signature=types.join(',');
+      for(let k=0;k<10+i%3;k++)types.push(bag.splice(Math.floor(rand()*bag.length),1)[0]);
+      // Unique obstacle sets, not merely reordered copies of another course.
+      signature=types.slice().sort().join(',');
     }while(used.has(signature));
     used.add(signature);
-    // A second, reversed obstacle leg makes each deployment a full-length route,
-    // rather than a short sprint followed by a long wait at the finish.
-    types=[...types,...types.slice().reverse()];
+    // Keep every obstacle in a course different, without a mirrored second leg.
     signature=types.join(',');
     const env=environments[i%8],name=names[Math.floor(i/10)]+' '+suffixes[i%10];
     return {num:i+1,name,phase:'60-SECOND RACE',week:env.toUpperCase(),kind:'gauntlet',
-      env,diff:.15+(i/99)*.65,limit:60,segs:types.map(t=>({t})),signature,
-      desc:'A 60-second race against your squad. Clear every checkpoint in order. Fastest finish wins; unfinished racers are ranked by course progress.',
+      env,diff:.15+(i/99)*.65,limit:RACE_DURATION,segs:types.map(t=>({t})),signature,
+      desc:`A ${RACE_DURATION}-second race against your squad. Clear every checkpoint in order. Fastest finish wins; unfinished racers are ranked by course progress. The bottom ${RACE_DISQUALIFIED} racers are disqualified at the buzzer.`,
       tasks:['Joystick or WASD to move. Shift to sprint, Space to jump or climb, C to crawl.',
         'Clear the gold checkpoints in order. Hold Space on monkey bars.',
-        'The round lasts exactly 60 seconds. Finish early to watch the squad.',
+        `The round lasts exactly ${RACE_DURATION} seconds. Finish early to watch the squad.`,
+        `The bottom ${RACE_DISQUALIFIED} racers are disqualified, even if they reach the finish.`,
         'Racers do not block each other. Falls return you to the obstacle entrance.']};
   });
 }

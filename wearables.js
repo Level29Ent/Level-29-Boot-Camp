@@ -48,7 +48,7 @@ export function addWearables(model,style){
     shape(body,new THREE.SphereGeometry(1,20,12,0,Math.PI*2,0,Math.PI/2),color,0,2.04,0,.205,height,.205);
   }
   function torso(plush=false){
-    rounded(body,base,0,1.4,0,.57,.57,.36,.08);
+    rounded(body,base,0,1.42,0,.57,.62,.36,.08);
     // Upper sleeves are attached to upper arms; long sleeves to forearms too.
     for(const i of [0,2]){
       const arm=model.userData.limbs[i];rounded(arm,base,0,-.1,0,.2,.32,.215,.045);
@@ -59,7 +59,7 @@ export function addWearables(model,style){
       ball(body,accent,0,1.4,-.21,.21,.25,.04);
       rounded(body,base,0,1.02,0,.5,.23,.33,.045);
       for(const i of [1,3]){
-        rounded(model.userData.limbs[i],base,0,-.21,0,.24,.49,.27,.045);
+        rounded(model.userData.limbs[i],base,0,-.21,0,.295,.49,.29,.045);
         const shin=model.userData.shin[i===1?0:1];
         rounded(shin,base,0,-.15,0,.23,.38,.26,.04);
         rounded(shin,base,0,-.4,-.06,.26,.23,.42,.06);

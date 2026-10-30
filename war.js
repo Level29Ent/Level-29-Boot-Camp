@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as A from './art.js';
 import {cloud} from './cloud.js';
+import {createWarPractice} from './war-practice.js';
+import {cleanCallsign} from './local-player.js';
 import {selectedStyle,styleFor} from './avatar-styles.js';
 import {thirdPersonView} from './war-view.js';
 import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS,rankFor} from './rules.js';
@@ -9,7 +11,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const collides=(x,z)=>Math.abs(x)>22||Math.abs(z)>32||WAR_COVER.some(c=>Math.abs(x-c.x)<c.w/2+.48&&Math.abs(z-c.z)<c.d/2+.48);
 export function initWar(api){
-  const w={active:false,room:null};let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
+  const w={active:false,room:null};let practice=null;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
   let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
   let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
   let pendingJump=false,pendingReload=false,pendingFire=false,lastRtt=0;
@@ -19,13 +21,13 @@ export function initWar(api){
   const now=()=>Date.now()+clockOffset;
   const elapsed=()=>w.room?.startsAt?(Math.min(now(),w.room.endedAt||Infinity)-w.room.startsAt)/1000:-4;
   async function request(action,payload={}){
-    const sent=Date.now(),state=await cloud.rpc(action,payload),rtt=Date.now()-sent;
+    const sent=Date.now(),state=practice?practice.update(payload):await cloud.rpc(action,payload),rtt=Date.now()-sent;
     if(state.serverNow&&rtt<bestRtt){bestRtt=rtt;clockOffset=state.serverNow-(sent+Date.now())/2;}
     lastNetwork=performance.now();lastRtt=rtt;return state;
   }
   function stop(){clearInterval(timer);timer=null;busy=false;}
   w.exit=()=>{
-    const code=w.room?.code;stop();
+    const code=practice?null:w.room?.code;stop();practice=null;
     if(code)cloud.rpc('room_leave',{code}).catch(()=>{});
     w.active=false;w.room=null;audio.stop();fireMouse=false;pendingJump=pendingReload=pendingFire=false;document.body.classList.remove('war-active');
     const useButton=$('touchControls')?.querySelector('[data-key="e"]');if(useButton)useButton.innerHTML='E<br><small>USE</small>';
@@ -36,7 +38,7 @@ export function initWar(api){
   };
   w.open=()=>{
     w.exit();ended=false;api.stopRace();api.setMode('warMenu');api.show('warMenu');
-    message('Choose your deployment. PvBot: your squad vs five bots. PvP: two human-led teams, with bots filling vacancies.');
+    message('Local 5v5 bot practice starts instantly without a cloud account. Online co-op and PvP require the cloud service.');
     $('warJoinCode').value='';
   };
   $('btnWar').onclick=w.open;
@@ -48,7 +50,12 @@ export function initWar(api){
     catch(e){message(e.message);}
     finally{button.disabled=false;}
   }
-  $('warBots').onclick=()=>prepare($('warBots'),async()=>{
+  $('warBots').onclick=()=>{
+    const name=cleanCallsign($('racerName').value);w.exit();
+    practice=createWarPractice(name,{equipped:cloud.profile?.equipped,xp:cloud.profile?.xp});
+    apply(practice.state);poll();
+  };
+  $('warCloudBots').onclick=()=>prepare($('warCloudBots'),async()=>{
     w.room=await request('war_create',{mode:'pve'});
     apply(await request('room_start',{code:w.room.code}));poll();
   });
@@ -101,7 +108,7 @@ export function initWar(api){
       const state=await request(w.active?'war_input':'room_state',payload);
       if(w.room?.code!==code)return;
       apply(state);
-      $('warNetwork').textContent='CLOUD LIVE · '+Math.round(lastRtt)+' ms';
+      $('warNetwork').textContent=practice?'LOCAL PRACTICE · NO CLOUD REWARDS':'CLOUD LIVE · '+Math.round(lastRtt)+' ms';
     }catch(e){
     if(w.active)$('warNetwork').textContent='RECONNECTING · '+e.message;
       else $('warLobbyNote').textContent=e.message;
@@ -173,7 +180,7 @@ export function initWar(api){
     }
     if(!api.camera.parent)api.scene.add(api.camera);
     const own=me();visual.set(own.x,own.y,own.z);
-    $('warModeBadge').textContent=(w.room.mode==='pvp'?'PVP':'PVBOT')+' / '+(own.team==='blue'?'ALPHA':'BRAVO');
+    $('warModeBadge').textContent=(practice?'LOCAL PRACTICE':w.room.mode==='pvp'?'PVP':'PVBOT')+' / '+(own.team==='blue'?'ALPHA':'BRAVO');
     audio.mode=$('warAudio').value;audio.start(api.audioContext());
     renderUi();
   }
@@ -289,6 +296,7 @@ export function initWar(api){
     $('warResultSummary').textContent='ALPHA '+w.room.scores.blue+' : '+w.room.scores.red+' BRAVO · '+own.kills+' eliminations · '+own.deaths+' deaths';
     $('warResultRoster').innerHTML=w.room.players.slice().sort((a,b)=>b.kills-a.kills).map(p=>
       `<div class="war-result-player ${p.id===w.room.me?'is-you':''}"><span class="${p.team}">${esc(p.name)}${p.bot?' · AI':''}</span><b>${p.kills} / ${p.deaths}</b></div>`).join('');
+    if(practice){$('warRewardText').textContent='Local practice complete. No cloud cash, XP or leaderboard scores awarded.';return;}
     $('warRewardText').textContent='Syncing match earnings…';
     try{
       const p=await cloud.refresh(),reward=p.claims.find(c=>c.source==='match:'+w.room.code);
@@ -298,6 +306,6 @@ export function initWar(api){
   }
   w.text=()=>({active:w.active,room:w.room?.code,kind:w.room?.mode,elapsed:+elapsed().toFixed(2),
     scores:w.room?.scores,me:me(),players:w.room?.players.map(({id,name,team,bot,hp,x,y,z,kills,deaths})=>({id,name,team,bot,hp,x,y,z,kills,deaths})),
-    input:lastInput,view:'third-person',ended,cloud:true});
+    input:lastInput,view:'third-person',ended,cloud:!practice,practice:!!practice});
   return w;
 }

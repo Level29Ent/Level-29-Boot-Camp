@@ -1,10 +1,12 @@
 import {cloud} from './cloud.js';
+import {localCallsign,saveLocalPlayer} from './local-player.js';
 import {AVATAR_STYLES,STYLE_PALETTES,STYLE_CATEGORIES,selectedStyle,selectStyle,styleFor,stylePreview} from './avatar-styles.js';
 import {ACHIEVEMENTS,COSMETICS,dailyChallenges,dayKey,rankFor,rankProgress,RANKS} from './rules.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function initCommand(api){
-  let selected='orders',loading=false,stylePage=0;
+  let selected='orders',loading=false,stylePage=0,authBusy=false;
+  const loginVisible=()=>$('playerLogin').classList.contains('hidden')===false;
   const pageSize=10;
   const status=(s)=>{$('commandStatus').textContent=s;};
   function has(source){return cloud.profile?.claims.some(c=>c.source===source);}
@@ -138,20 +140,44 @@ export function initCommand(api){
   $('refreshProfile').onclick=()=>action($('refreshProfile'),()=>cloud.refresh());
   window.addEventListener('b29:profile',render);
   function login(){
-    api.stopModes();api.setMode('playerLogin');api.show('playerLogin');$('loginStatus').textContent='Create a profile once, or restore an existing one. Remember this device to return without entering a code.';
+    api.stopModes();api.setMode('playerLogin');api.show('playerLogin');$('enlistName').value=localCallsign();$('loginStatus').textContent='Cloud saving is optional. Save a callsign here and play immediately, or continue as Recruit.';
   }
   window.addEventListener('b29:login',login);
   $('loginBack').onclick=api.title;
+  function localPlay(useName){
+    const player=saveLocalPlayer(useName?$('enlistName').value:'Recruit',{remember:useName});
+    $('racerName').value=player.name;$('localPlayerName').textContent=player.name;
+    $('localSaveStatus').textContent=!useName?'Playing as a guest. No name was saved or replaced; training progress and appearance can still save in this browser.':player.saved?'Callsign saved on this device. Solo results do not award cloud cash or XP.':'Browser storage unavailable. You can still play; your name is kept for this session only.';
+    api.stopModes();api.setMode('localPlay');api.show('localPlay');
+    if(!cloud.profile){$('titleWallet').textContent='LOCAL PLAYER · '+player.name;$('profileShortcut').textContent='Player / optional cloud save';}
+  }
+  $('loginLocal').onclick=()=>localPlay(true);
+  $('loginGuest').onclick=()=>localPlay(false);
+  $('localRace').onclick=()=>api.playRace();
+  $('localWar').onclick=()=>api.playWar();
+  $('localTraining').onclick=()=>api.playTraining();
+  $('localBack').onclick=api.title;
+  $('enlistName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();localPlay(true);}};
+  function authButtons(busy){authBusy=busy;$('loginRestore').disabled=busy;$('loginCreate').disabled=busy;}
   $('loginRestore').onclick=async()=>{
-    const button=$('loginRestore');button.disabled=true;$('loginStatus').textContent='Checking your player code…';
-    try{cloud.setRemember($('rememberLogin').checked);await cloud.restore($('loginCode').value);$('loginCode').value='';selected='orders';await open();}
-    catch(e){$('loginStatus').textContent=e.message;}finally{button.disabled=false;}
+    if(authBusy)return;authButtons(true);$('loginStatus').textContent='Connecting to cloud profile… Local play remains available below.';
+    try{
+      cloud.setRemember($('rememberLogin').checked);await cloud.restore($('loginCode').value);$('loginCode').value='';
+      if(loginVisible()){selected='orders';await open();}
+    }catch(e){$('loginStatus').textContent=e.message+' Use Save name & play or Play without saving to continue.';}
+    finally{authButtons(false);}
   };
   $('loginCreate').onclick=async()=>{
-    const button=$('loginCreate');button.disabled=true;$('loginStatus').textContent='Creating your cloud recruit…';
-    try{cloud.setRemember($('rememberLogin').checked);await cloud.create($('enlistName').value);selected='profile';await open();status('Profile created. '+cloud.saveStatus+' Keep a recovery code for another device.');}
-    catch(e){$('loginStatus').textContent=e.message;}finally{button.disabled=false;}
+    if(authBusy)return;authButtons(true);$('loginStatus').textContent='Creating optional cloud profile… You can play locally without waiting.';
+    try{
+      cloud.setRemember($('rememberLogin').checked);await cloud.create($('enlistName').value);
+      if(loginVisible()){selected='profile';await open();status('Cloud profile created. '+cloud.saveStatus);}
+    }catch(e){$('loginStatus').textContent=e.message+' Your local play buttons remain available.';}
+    finally{authButtons(false);}
   };
-  if(cloud.token)cloud.ensure().then(()=>{$('profileShortcut').textContent='Profile saved / manage';}).catch(()=>{$('profileShortcut').textContent='Reconnect saved profile';});
+  if(!cloud.profile)$('racerName').value=localCallsign();
+  if(cloud.token)cloud.ensure('Recruit',{prompt:false}).then(()=>{$('profileShortcut').textContent='Profile saved / manage';}).catch(()=>{
+    $('profileShortcut').textContent='Player / reconnect cloud';
+  });
   return {open,render};
 }

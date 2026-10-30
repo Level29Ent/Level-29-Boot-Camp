@@ -66,7 +66,7 @@
       </svg>
       <h1 class="game-title">LEVEL 29<span>BOOT CAMP</span></h1>
       <p class="tagline">Race. Fight. Earn your stripes.<br>100 courses · 5v5 war · daily field cash.</p>
-      <div class="profile-strip"><span id="titleRank">RECRUIT</span><span id="titleWallet">CLOUD PLAYER DOSSIER</span><button id="profileShortcut">Player login / profile</button></div>
+      <div class="profile-strip"><span id="titleRank">RECRUIT</span><span id="titleWallet">CLOUD PLAYER DOSSIER</span><button id="profileShortcut">Save name / play</button></div>
       <div class="menu">
         <button class="btn primary" id="btnWar">5v5 War</button>
         <button class="btn" id="btnMout">MOUT Shoot House</button>
@@ -221,7 +221,7 @@
             <div class="race-label">RANDOM COURSE ROTATION</div>
             <p>All 100 courses shuffled each session. No repeats until all 100 are drawn. The host sets the rotation for friends. Course revealed at the start.</p>
           </div>
-          <button class="btn primary wide" id="raceSolo">Deploy against 7 bots</button>
+          <button class="btn primary wide" id="raceSolo">Play now vs 7 bots — no login</button><p class="race-fine">Local practice starts immediately. No cloud cash or XP.</p><button class="btn wide" id="raceCloudSolo">Optional cloud race + rewards</button>
           <p class="race-fine">Joystick, keyboard and gamepad supported. Fastest finish wins; otherwise furthest progress wins. Places 6–8 are disqualified at the buzzer, even if they finish.</p>
         </div>
         <div class="friend-panel">
@@ -259,7 +259,7 @@
       <div class="war-hero"><h2 class="sheet-title">HOLD YOUR GROUND.<br>BACK YOUR SQUAD.</h2><strong>5v5</strong></div>
       <p class="war-description">Third-person, over-the-shoulder team combat. Two squads, one fortified training ground. First to 30 eliminations, or the highest score after three minutes. Respawns keep you in the fight.</p>
       <div class="war-deployments">
-        <article class="war-deployment blue-deployment"><div class="brief-phase">PVBOT / CO-OP</div><h3>YOU VS THE BATTALION</h3><p>Lead Alpha against five AI opponents. Bring up to four friends on your team, or let bots fill your squad.</p><button class="btn primary" id="warBots">Deploy now vs bots</button><button class="btn" id="warCreatePve">Create co-op room</button></article>
+        <article class="war-deployment blue-deployment"><div class="brief-phase">PVBOT / CO-OP</div><h3>YOU VS THE BATTALION</h3><p>Lead Alpha against five AI opponents. Bring up to four friends on your team, or let bots fill your squad.</p><button class="btn primary" id="warBots">Play local 5v5 — no login</button><p class="race-fine">Offline bot practice. No cloud cash or XP.</p><button class="btn" id="warCloudBots">Optional cloud match vs bots</button><button class="btn" id="warCreatePve">Create co-op room</button></article>
         <article class="war-deployment red-deployment"><div class="brief-phase">PVP / TEAM WAR</div><h3>ALPHA VS BRAVO</h3><p>Compete with friends on opposing teams. Up to ten human players. AI reinforcements fill empty slots, five per side.</p><button class="btn primary" id="warCreatePvp">Host private PvP</button><button class="btn" id="warFind">Find public PvP lobby</button></article>
       </div>
       <div class="war-join"><label for="warJoinCode">HAVE ORDERS?</label><input id="warJoinCode" maxlength="6" placeholder="ROOM CODE" aria-label="War room code" autocomplete="off"><button class="btn" id="warJoin">Join room</button><label class="war-audio-label" for="warAudio">FIELD AUDIO</label><select id="warAudio"><option value="both">Military beat + ambience</option><option value="music">Military beat</option><option value="ambience">War ambience</option><option value="off">Off</option></select></div>
@@ -289,7 +289,27 @@
   </div>
   <div id="warScores" class="hidden"><div class="war-score-header"><h3>LIVE SQUAD REPORT</h3><button id="warScoresClose">Close</button></div><div class="war-team-grid"><div><h3 class="blue">ALPHA / K / D</h3><div id="warScoreBlue"></div></div><div><h3 class="red">BRAVO / K / D</h3><div id="warScoreRed"></div></div></div></div>
   <section id="playerLogin" class="screen hidden">
-    <div class="sheet narrow login-sheet"><div class="brief-phase">LEVEL 29 / CLOUD PLAYER PASSPORT</div><h2 class="sheet-title">IDENTIFY YOURSELF</h2><p class="brief-text">Create your profile once. Cash, XP and match stats save in the cloud. Remember this device to sign back in automatically. Completed training levels save on this device only.</p><label class="remember-choice"><input id="rememberLogin" type="checkbox" checked> Remember this device (trusted devices only)</label><label class="race-label" for="loginCode">RETURNING PLAYER / PRIVATE CODE</label><input id="loginCode" type="password" maxlength="64" autocomplete="off" placeholder="Paste your private player code"><button class="btn primary wide" id="loginRestore">Sign in & restore progress</button><div class="login-divider">FIRST DEPLOYMENT?</div><label class="race-label" for="enlistName">NEW RECRUIT / CALLSIGN</label><input id="enlistName" maxlength="18" value="Recruit" autocomplete="off"><button class="btn wide" id="loginCreate">Create & save profile</button><p id="loginStatus" class="race-fine" role="status" aria-live="polite"></p><button class="btn" id="loginBack">Back to base</button></div>
+    <div class="sheet narrow login-sheet">
+      <div class="brief-phase">PLAY FIRST / CLOUD SAVE OPTIONAL</div><h2 class="sheet-title">READY TO PLAY.</h2>
+      <p class="brief-text">A name is all you need for solo play. No account or connection required. Completed training and appearance selections save in this browser when storage is available.</p>
+      <label class="race-label" for="enlistName">YOUR CALLSIGN (OPTIONAL)</label><input id="enlistName" maxlength="18" value="Recruit" autocomplete="nickname" placeholder="Recruit">
+      <button class="btn primary wide" id="loginLocal">Save name & play</button><button class="btn wide" id="loginGuest">Play without saving</button>
+      <p id="loginStatus" class="race-fine" role="status" aria-live="polite"></p>
+      <details class="cloud-login"><summary>Optional cloud saves, rewards & online friends</summary>
+        <p class="race-fine">Cloud features need the external game service. If it is unavailable, use either play button above. Local practice never grants cloud rewards.</p>
+        <label class="remember-choice"><input id="rememberLogin" type="checkbox" checked> Remember cloud sign-in on this trusted device</label>
+        <button class="btn wide" id="loginCreate">Create optional cloud profile with this name</button>
+        <label class="race-label" for="loginCode">EXISTING PRIVATE RECOVERY CODE</label><input id="loginCode" type="password" maxlength="64" autocomplete="off" placeholder="Paste private recovery code">
+        <button class="btn wide" id="loginRestore">Restore cloud profile</button>
+      </details><button class="btn" id="loginBack">Back to base</button>
+    </div>
+  </section>
+  <section id="localPlay" class="screen hidden">
+    <div class="sheet narrow login-sheet"><div class="brief-phase">LOCAL PLAY / NO CLOUD ACCOUNT NEEDED</div><h2 class="sheet-title">DEPLOY, <span id="localPlayerName">RECRUIT</span>.</h2>
+      <p id="localSaveStatus" class="race-fine" role="status"></p><div class="menu">
+        <button class="btn primary" id="localRace">Play 60-second race</button><button class="btn" id="localWar">Play 5v5 bot practice</button><button class="btn" id="localTraining">Continue training</button><button class="btn" id="localBack">Back to base</button>
+      </div><p class="race-fine">Online friend rooms and cloud rewards still require a working cloud profile. Local practice does not change an existing cloud save.</p>
+    </div>
   </section>
   <section id="command" class="screen hidden">
     <div class="sheet command-sheet">

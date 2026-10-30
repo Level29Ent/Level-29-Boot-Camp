@@ -7,10 +7,11 @@ export const cloud={
     try{
       const response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action,payload,token}),signal:controller.signal,credentials:'omit'});
-      const data=await response.json();
-      if(!response.ok)throw Object.assign(new Error(data.error||'Game service unavailable.'),{status:response.status});
+      let data;
+      try{data=await response.json();}catch{throw Object.assign(new Error('Cloud service returned an unreadable response. Solo play is still available.'),{status:response.status});}
+      if(!response.ok)throw Object.assign(new Error(data?.error||data?.message||'Cloud service unavailable. Solo play is still available.'),{status:response.status});
       return data;
-    }catch(e){if(e.name==='AbortError')throw new Error('Connection timed out. Please retry.');throw e;}
+    }catch(e){if(e.name==='AbortError')throw new Error('Cloud connection timed out. Play locally now, or retry later.');if(e instanceof TypeError)throw new Error('Cannot reach the cloud save service. Play locally now; your existing recovery code is unchanged.');throw e;}
     finally{clearTimeout(timer);}
   },
   saveDevice(){
@@ -22,10 +23,10 @@ export const cloud={
   setRemember(value){this.remember=value;return this.saveDevice();},
   get saveStatus(){return this.deviceError?'Device storage unavailable · Copy your recovery code. To remove a previous saved login, clear this site’s browser data.':this.deviceSaved?'Auto-save on · Profile remembered on this device.':this.remember?'Device save unavailable · Copy your recovery code before leaving.':'Session only · Copy your recovery code before leaving.';},
   publish(profile){this.profile=profile;window.dispatchEvent(new CustomEvent('b29:profile',{detail:profile}));return profile;},
-  async ensure(name='Recruit'){
+  async ensure(name='Recruit',{prompt=true}={}){
     if(this.profile)return this.profile;
     if(this.pending)return this.pending;
-    if(!this.token){window.dispatchEvent(new Event('b29:login'));throw new Error('Create or restore your recruit in Player Login first.');}
+    if(!this.token){if(prompt)window.dispatchEvent(new Event('b29:login'));throw new Error('Create or restore your recruit in Player Login first.');}
     this.pending=(async()=>{
       const revision=this.revision,token=this.token;
       let p;
@@ -33,7 +34,7 @@ export const cloud={
       catch(e){
         if((e.status===401||e.status===403)&&revision===this.revision&&token===this.token){
           this.token='';this.deviceSaved=false;rememberPassport('');
-          window.dispatchEvent(new Event('b29:login'));
+          if(prompt)window.dispatchEvent(new Event('b29:login'));
         }
         throw e;
       }
@@ -54,7 +55,9 @@ export const cloud={
     return this.publish(profile);
   },
   async create(name){
-    const result=await this.send('register',{name});
+    const trimmed=String(name||'').trim();if(!trimmed||trimmed.length>18)throw new Error('Enter a callsign between 1 and 18 characters.');
+    const result=await this.send('register',{name:trimmed});
+    if(!result?.token||!result?.profile)throw new Error('Cloud registration did not return a saved profile. Play locally while the service is unavailable.');
     this.revision++;this.change++;this.token=result.token;this.saveDevice();
     return this.publish(result.profile);
   },

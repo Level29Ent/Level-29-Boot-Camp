@@ -36,7 +36,7 @@ export function initMout(api){
   m.open=()=>{api.stopModes();api.setMode('moutBrief');api.show('moutBrief');};
   $('btnMout').onclick=m.open;$('moutBack').onclick=api.title;
   $('moutDeploy').onclick=()=>start();$('moutRetry').onclick=()=>start();$('moutResultBack').onclick=api.title;
-  $('moutPause').onclick=()=>m.pause();$('moutResume').onclick=()=>m.pause();$('moutAbort').onclick=api.title;
+  $('moutPauseButton').onclick=()=>m.pause();$('moutResume').onclick=()=>m.pause();$('moutAbort').onclick=api.title;
   m.pause=()=>{
     if(!m.active||state.ended)return;
     if(api.mode()==='playing'){unlock();api.clearKeys();api.setMode('moutPause');api.show('moutPause');}
@@ -80,7 +80,7 @@ export function initMout(api){
   }
   function build(){
     const texture=metalTexture(),palette=['#4c6158','#765c46','#596779'];
-    const mats=palette.map(color=>new THREE.MeshStandardMaterial({color,metalness:.55,roughness:.78,bumpMap:texture,bumpScale:.055}));
+    const mats=palette.map(color=>new THREE.MeshStandardMaterial({color,metalness:.25,roughness:.82,bumpMap:texture,bumpScale:.055}));
     const dark=new THREE.MeshStandardMaterial({color:'#282e30',metalness:.6,roughness:.65});
     const floor=new THREE.MeshStandardMaterial({color:'#565955',metalness:.25,roughness:.9});
     const gold=new THREE.MeshStandardMaterial({color:'#ffc95b',roughness:.75});
@@ -99,6 +99,11 @@ export function initMout(api){
       const ribs=new A.Builder();
       for(const x of [r.side*1.5,r.side*7])for(const z of [r.z-4,r.z+4])ribs.box(.2,2.92,.2,'#30393b',x,r.y+1.4,z);
       for(let z=r.z-3.8;z<r.z+4;z+=.36)ribs.box(.065,2.65,.055,'#718078',r.side*7.1,r.y+1.35,z);
+      for(let z=r.z-3.8;z<r.z+4;z+=.28){
+        if(Math.abs(z-r.z)>1.1)ribs.box(.045,2.35,.05,'#62746e',r.side*1.4,r.y+1.25,z);
+      }
+      // Visible corner-fed door jambs and threshold caution strips.
+      for(const side of [-1,1])ribs.box(.07,2.4,.08,'#d4af4f',r.side*1.37,r.y+1.2,r.z+side*1.03);
       ribs.mesh(api.world);
       const door=box(.14,2.4,1.9,dark,r.side*1.5,r.y+1.2,r.z,true);doors.push({room:r,mesh:door});
       const sign=api.label(r.id+' / BREACH',r.side*1.38,r.y+2.55,r.z,'#ffd480',1.7);sign.rotation.y=r.side===1?-Math.PI/2:Math.PI/2;
@@ -125,18 +130,19 @@ export function initMout(api){
     const rails=new A.Builder();
     for(const side of [-1,1]){
       for(let z=-16;z>=-22;z-=1){const y=(-16-z)/2;rails.box(.055,1.1,.055,'#aeb5ad',side*1.36,y+.5,z);}
-      for(let z=-22;z>=-30;z-=1.5)rails.box(.055,1.1,.055,'#aeb5ad',side*1.37,3.5,z);
-      rails.box(.06,.06,8,'#aeb5ad',side*1.37,4.02,-26);
+      for(let z=-22;z>=-30;z-=1.5)if(Math.abs(z+26)>1.3)rails.box(.055,1.1,.055,'#aeb5ad',side*1.37,3.5,z);
+      for(const z of [-28.65,-23.35])rails.box(.06,.06,2.7,'#aeb5ad',side*1.37,4.02,z);
+      const handrail=box(.055,.055,Math.hypot(6,3),dark,side*1.36,2.48,-19);handrail.rotation.x=Math.atan(.5);
     }
     rails.mesh(api.world);
     box(2.8,.06,.3,gold,0,3.02,-28.5);
     const extract=api.label('EXTRACTION / CLEAR ALL 6 ROOMS',0,4.7,-29.8,'#8fffb6',3);extract.name='mout-extraction';
-    api.label('MOUT / LIVE TARGET DRILL',0,3.3,1,'#ffc95b',4);
+    api.label('MOUT / SHOOT HOUSE',0,4.2,1,'#ffc95b',2.8);
     // Harsh overhead fixtures; one shadow caster plus fill spots for mobile budget.
     for(const [i,z] of [0,-12,-25].entries()){
       for(const side of [-1,1])box(.12,8,.12,dark,side*9,3.8,z);
       box(18,.12,.12,dark,0,7.8,z);box(2,.12,.6,lamp,0,7.6,z);
-      const light=new THREE.SpotLight('#fff0d0',170,30,Math.PI/3,.3,1.2);light.position.set(0,7.5,z);light.target.position.set(0,0,z-3);api.world.add(light,light.target);
+      const light=new THREE.SpotLight('#fff0d0',105,30,Math.PI/3,.3,1.2);light.position.set(0,7.5,z);light.target.position.set(0,0,z-3);api.world.add(light,light.target);
       if(i===1){light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.bias=-.0005;light.shadow.normalBias=.04;}
     }
     // Room practicals keep target colors readable even inside the covered shells.
@@ -152,7 +158,7 @@ export function initMout(api){
       sunColor:api.lights.sun.color.clone(),sunIntensity:api.lights.sun.intensity,castShadow:api.lights.sun.castShadow,
       background:api.scene.background,fog:api.scene.fog,exposure:api.renderer.toneMappingExposure,shadows:api.renderer.shadowMap.enabled,fov:api.camera.fov};
     A.applyEnv('night',api.scene,api.lights,api.renderer);api.scene.background=new THREE.Color('#151f25');api.scene.fog=new THREE.Fog('#18232b',22,65);
-    api.lights.hemi.intensity=.6;api.lights.sun.intensity=.35;api.lights.sun.castShadow=false;api.renderer.toneMappingExposure=1.35;api.renderer.shadowMap.enabled=true;
+    api.lights.hemi.intensity=.85;api.lights.sun.intensity=.5;api.lights.sun.castShadow=false;api.renderer.toneMappingExposure=1.15;api.renderer.shadowMap.enabled=true;
     if(!api.camera.parent)api.scene.add(api.camera);
     lastClock=clock();m.active=true;document.body.classList.add('mout-active');api.setMode('playing');api.show(null);api.clearKeys();controls(true);$('moutHud').classList.remove('hidden');api.startAudio();build();updateCamera();renderHud();
   }

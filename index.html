@@ -70,10 +70,25 @@
         <button class="btn primary" id="btnWar">5v5 War</button>
         <button class="btn" id="btnRace">60-Second Races</button>
         <button class="btn" id="btnCommand">Command & Rewards</button>
+        <button class="btn" id="btnService">Ranks & Avatar Kits</button>
         <button class="btn" id="btnStart">Start Training</button>
         <button class="btn" id="btnSelect">Training Schedule</button>
         <button class="btn" id="btnControls">Controls</button>
       </div>
+    </div>
+  </section>
+
+  <section id="service" class="screen hidden">
+    <div class="sheet command-sheet">
+      <div class="brief-phase">LEVEL 29 / RANKS & AVATAR KITS</div>
+      <h2 class="sheet-title">EARN YOUR STRIPES.</h2>
+      <p class="brief-text">Rise through 10 ranks with cloud-awarded XP from races and War. Each 1,000 XP earns the next rank. Cosmetic kits change your appearance, never your combat stats.</p>
+      <p id="serviceProgress" class="race-fine" role="status"></p>
+      <h3 class="command-subhead">RANK LADDER</h3><div id="rankLadder"></div>
+      <h3 class="command-subhead">WEAR YOUR ACHIEVEMENTS</h3>
+      <p class="race-fine">Spend Field Cash in the Armory, then equip your kit. Chest rigs, shoulder bands and back rank patches appear on your soldier. Team helmets stay unchanged.</p>
+      <div id="serviceLoadouts" class="order-grid"></div>
+      <div class="command-bottom"><button id="serviceManage" class="btn primary">Manage avatar / sign in</button><button id="serviceBack" class="btn">Back to base</button></div>
     </div>
   </section>
 
@@ -213,14 +228,14 @@
     <div class="sheet war-sheet">
       <div class="brief-phase">LEVEL 29 / TACTICAL FIELD OPERATIONS</div>
       <div class="war-hero"><h2 class="sheet-title">HOLD YOUR GROUND.<br>BACK YOUR SQUAD.</h2><strong>5v5</strong></div>
-      <p class="war-description">First-person team combat. Two squads, one fortified training ground. First to 30 eliminations, or the highest score after three minutes. Respawns keep you in the fight.</p>
+      <p class="war-description">Third-person, over-the-shoulder team combat. Two squads, one fortified training ground. First to 30 eliminations, or the highest score after three minutes. Respawns keep you in the fight.</p>
       <div class="war-deployments">
         <article class="war-deployment blue-deployment"><div class="brief-phase">PVBOT / CO-OP</div><h3>YOU VS THE BATTALION</h3><p>Lead Alpha against five AI opponents. Bring up to four friends on your team, or let bots fill your squad.</p><button class="btn primary" id="warBots">Deploy now vs bots</button><button class="btn" id="warCreatePve">Create co-op room</button></article>
         <article class="war-deployment red-deployment"><div class="brief-phase">PVP / TEAM WAR</div><h3>ALPHA VS BRAVO</h3><p>Compete with friends on opposing teams. Up to ten human players. AI reinforcements fill empty slots, five per side.</p><button class="btn primary" id="warCreatePvp">Host private PvP</button><button class="btn" id="warFind">Find public PvP lobby</button></article>
       </div>
       <div class="war-join"><label for="warJoinCode">HAVE ORDERS?</label><input id="warJoinCode" maxlength="6" placeholder="ROOM CODE" aria-label="War room code" autocomplete="off"><button class="btn" id="warJoin">Join room</button><label class="war-audio-label" for="warAudio">FIELD AUDIO</label><select id="warAudio"><option value="both">Military beat + ambience</option><option value="music">Military beat</option><option value="ambience">War ambience</option><option value="off">Off</option></select></div>
       <p id="warStatus" role="status" aria-live="polite"></p>
-      <p class="race-fine">Joystick / WASD to move · drag to aim · J or hold mouse to fire · E / R reload · K zoom · Space jump · Shift sprint. Match cash requires 20 seconds of active play. No friendly fire.</p>
+      <p class="race-fine">Joystick / WASD to move · click the arena for mouse-look (Esc releases) or drag to look · J / left mouse to fire · E / R reload · K / right mouse for shoulder aim · C crouch · Space jump · Shift sprint. Match cash requires 20 seconds of active play. No friendly fire.</p>
       <div class="war-menu-footer"><button class="btn" id="warBack">Back to base</button><button class="btn" id="warMenuCommand">Command & rewards</button></div>
     </div>
   </section>
@@ -245,13 +260,13 @@
   </div>
   <div id="warScores" class="hidden"><div class="war-score-header"><h3>LIVE SQUAD REPORT</h3><button id="warScoresClose">Close</button></div><div class="war-team-grid"><div><h3 class="blue">ALPHA / K / D</h3><div id="warScoreBlue"></div></div><div><h3 class="red">BRAVO / K / D</h3><div id="warScoreRed"></div></div></div></div>
   <section id="playerLogin" class="screen hidden">
-    <div class="sheet narrow login-sheet"><div class="brief-phase">LEVEL 29 / CLOUD PLAYER PASSPORT</div><h2 class="sheet-title">IDENTIFY YOURSELF</h2><p class="brief-text">Your progress is stored on the server. Sign in with your private player code each new session, or create a recruit and save its code.</p><label class="race-label" for="loginCode">RETURNING PLAYER / PRIVATE CODE</label><input id="loginCode" type="password" maxlength="64" autocomplete="off" placeholder="Paste your private player code"><button class="btn primary wide" id="loginRestore">Sign in & restore progress</button><div class="login-divider">FIRST DEPLOYMENT?</div><label class="race-label" for="enlistName">NEW RECRUIT / CALLSIGN</label><input id="enlistName" maxlength="18" value="Recruit" autocomplete="off"><button class="btn wide" id="loginCreate">Create new cloud recruit</button><p id="loginStatus" class="race-fine" role="status" aria-live="polite"></p><button class="btn" id="loginBack">Back to base</button></div>
+    <div class="sheet narrow login-sheet"><div class="brief-phase">LEVEL 29 / CLOUD PLAYER PASSPORT</div><h2 class="sheet-title">IDENTIFY YOURSELF</h2><p class="brief-text">Create your profile once. Cash, XP and match stats save in the cloud. Remember this device to sign back in automatically. Completed training levels save on this device only.</p><label class="remember-choice"><input id="rememberLogin" type="checkbox" checked> Remember this device (trusted devices only)</label><label class="race-label" for="loginCode">RETURNING PLAYER / PRIVATE CODE</label><input id="loginCode" type="password" maxlength="64" autocomplete="off" placeholder="Paste your private player code"><button class="btn primary wide" id="loginRestore">Sign in & restore progress</button><div class="login-divider">FIRST DEPLOYMENT?</div><label class="race-label" for="enlistName">NEW RECRUIT / CALLSIGN</label><input id="enlistName" maxlength="18" value="Recruit" autocomplete="off"><button class="btn wide" id="loginCreate">Create & save profile</button><p id="loginStatus" class="race-fine" role="status" aria-live="polite"></p><button class="btn" id="loginBack">Back to base</button></div>
   </section>
   <section id="command" class="screen hidden">
     <div class="sheet command-sheet">
       <div class="command-header"><div><div class="brief-phase">LEVEL 29 / PLAYER DOSSIER</div><h2 class="sheet-title">COMMAND CENTER</h2></div><div class="command-wallet"><strong id="cashBalance">0</strong><span>FIELD CASH / FC</span></div></div>
       <div class="command-identity"><span id="profileName">Recruit</span><span id="profileRank">Recruit</span><span id="profileXp">0 XP</span></div>
-      <div id="profileMetrics"></div>
+      <div id="profileMetrics"></div><p id="rankProgressText" class="race-fine"></p><div class="order-progress"><i id="rankProgressBar"></i></div>
       <div class="command-tabs" role="tablist" aria-label="Command center sections"><button role="tab" aria-selected="true" data-command-tab="orders">Daily orders</button><button role="tab" aria-selected="false" data-command-tab="accomplishments">Accomplishments</button><button role="tab" aria-selected="false" data-command-tab="armory">Armory</button><button role="tab" aria-selected="false" data-command-tab="profile">Profile & history</button></div>
       <p id="commandStatus" role="status" aria-live="polite"></p>
       <div data-command-panel="orders">
@@ -260,7 +275,7 @@
       </div>
       <div data-command-panel="accomplishments" class="hidden"><h3 class="command-subhead">YOUR SERVICE RECORD</h3><p class="race-fine">Twelve permanent accomplishments. Claim each reward once when unlocked.</p><div class="order-grid" id="accomplishmentGrid"></div></div>
       <div data-command-panel="armory" class="hidden"><h3 class="command-subhead">EARNED. NOT BOUGHT WITH REAL MONEY.</h3><p class="race-fine">Spend field cash on cosmetic titles and nameplates. No damage upgrades. No pay-to-win.</p><div class="order-grid" id="armoryGrid"></div></div>
-      <div data-command-panel="profile" class="hidden"><h3 class="command-subhead">CASH ACTIVITY</h3><div id="cashHistory"></div><div class="profile-settings"><h3 class="command-subhead">CALLSIGN & PRIVATE PLAYER CODE</h3><div class="join-row"><input id="callsignEdit" maxlength="18" aria-label="Edit callsign"><button class="btn" id="saveCallsign">Save callsign</button></div><p>Your progress lives in the cloud. This play session remembers your passport, but reloading or opening another device requires the private code. Save it before leaving. Anyone with the code can access your profile: keep it private.</p><div class="join-row"><input id="playerCode" type="password" readonly aria-label="Your private player code" autocomplete="off"><button class="btn" id="revealPassport">Reveal code</button></div><button class="btn" id="copyPassport">Copy private recovery code</button><div class="join-row"><input id="passportInput" type="password" maxlength="64" placeholder="Private recovery code" aria-label="Player recovery code" autocomplete="off"><button class="btn" id="restorePassport">Restore profile</button></div></div></div>
+      <div data-command-panel="profile" class="hidden"><h3 class="command-subhead">CASH ACTIVITY</h3><div id="cashHistory"></div><div class="profile-settings"><h3 class="command-subhead">CALLSIGN & PRIVATE PLAYER CODE</h3><div class="join-row"><input id="callsignEdit" maxlength="18" aria-label="Edit callsign"><button class="btn" id="saveCallsign">Save callsign</button></div><p>Cash, XP and match stats save automatically in the cloud. Completed training levels save only in this browser. Remembering this device stores your private sign-in code here; anyone using this browser can access your profile. Keep a recovery code for other devices or if browser data is cleared.</p><p id="profileSaveStatus" role="status"></p><label class="remember-choice"><input id="rememberProfile" type="checkbox" checked> Remember this device</label><button class="btn" id="forgetDevice">Forget this device</button><div class="join-row"><input id="playerCode" type="password" readonly aria-label="Your private player code" autocomplete="off"><button class="btn" id="revealPassport">Reveal code</button></div><button class="btn" id="copyPassport">Copy private recovery code</button><div class="join-row"><input id="passportInput" type="password" maxlength="64" placeholder="Private recovery code" aria-label="Player recovery code" autocomplete="off"><button class="btn" id="restorePassport">Restore profile</button></div></div></div>
       <div class="command-bottom"><button class="btn" id="commandBack">Back to base</button><button class="btn" id="refreshProfile">Refresh cloud save</button><small>Field Cash is virtual game currency. No purchase, transfer, cash-out, or real-money value.</small></div>
     </div>
   </section>

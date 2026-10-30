@@ -3,6 +3,7 @@ import {createCourseRotation} from './race-rotation.js';
 import {RACE_DURATION,RACE_DISQUALIFIED,rankRaceEntries} from './race-rules.js';
 import {FieldAudio} from './race-audio.js';
 import {cloud} from './cloud.js';
+import {cosmeticFor,rankFor} from './rules.js';
 
 const $=id=>document.getElementById(id);
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -152,7 +153,10 @@ export function initRace(api){
   function modelFor(entry){
     if(models.has(entry.id))return models.get(entry.id);
     const model=api.person(entry.id.startsWith('bot')?r.bots.find(b=>b.id===entry.id).lane:1,7,'recruit',{cover:true,skin:models.size%4});
-    const tag=api.label(entry.type==='BOT'?'AI '+(Number(entry.id.slice(4))+1):entry.name,0,2.8,0,entry.color||'#79d7ff',entry.type==='BOT'?.8:1.6);
+    api.applyLoadout(model,entry.equipped,entry.xp);
+    const callsign=entry.name+(Number.isFinite(entry.xp)?' / '+rankFor(entry.xp):'');
+    const kit=cosmeticFor(entry.equipped);
+    const tag=api.label(entry.type==='BOT'?'AI '+(Number(entry.id.slice(4))+1):callsign,0,2.8,0,kit.id==='recruit'?(entry.color||'#79d7ff'):kit.color,entry.type==='BOT'?.8:1.6);
     api.world.remove(tag);model.add(tag);
     const item={model,tag};models.set(entry.id,item);return item;
   }

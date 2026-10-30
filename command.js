@@ -1,5 +1,5 @@
 import {cloud} from './cloud.js';
-import {ACHIEVEMENTS,COSMETICS,dailyChallenges,dayKey,rankFor} from './rules.js';
+import {ACHIEVEMENTS,COSMETICS,dailyChallenges,dayKey,rankFor,rankProgress,RANKS} from './rules.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function initCommand(api){
@@ -14,6 +14,30 @@ export function initCommand(api){
       <div class="order-progress"><i style="width:${progress/def.goal*100}%"></i></div>
       <div class="order-bottom"><span>${progress} / ${def.goal}</span><button class="btn" data-claim="${kind}:${def.id}" ${ready?'':'disabled'}>${claimed?'Claimed':ready?'Claim cash':'In progress'}</button></div></article>`;
   }
+  // A preview of wearable placement, not an assertion that a guest owns it.
+  function avatarPreview(item){
+    const kit=item.id==='recruit'?'#596b4b':item.color;
+    return `<svg class="avatar-preview" viewBox="0 0 180 210" role="img" aria-label="${esc(item.name)} uniform preview">
+      <ellipse cx="90" cy="199" rx="54" ry="7" fill="#0b100a"/>
+      <path d="M62 118h24v70H60zM94 118h24l2 70H94z" fill="#647354"/>
+      <path d="M58 180h29v17H53v-9zM93 180h29l5 8v9H93z" fill="#403c2e"/>
+      <path d="M53 64h74v61H53zM35 66h19v66H35zM126 66h19v66h-19z" fill="#647354"/>
+      ${item.id==='recruit'?'':`<rect x="59" y="71" width="62" height="47" rx="4" fill="#28332d"/>
+      <path d="M64 77h13v32H64zM103 77h13v32h-13zM61 64h10v13H61zM109 64h10v13h-10zM34 83h21v8H34zM125 83h21v8h-21z" fill="${kit}"/>`}
+      <rect x="73" y="22" width="34" height="39" rx="9" fill="#b88a70"/>
+      <path d="M68 36q0-25 22-25t22 25z" fill="#53684b"/>
+      <path d="M83 39h4M96 39h4" stroke="#1b241b" stroke-width="3"/>
+    </svg>`;
+  }
+  function renderService(){
+    const p=cloud.profile,rank=rankProgress(p?.xp);
+    $('serviceProgress').textContent=p?rank.name+' · '+rank.xp.toLocaleString()+' XP · '+(rank.next?rank.remaining.toLocaleString()+' XP to '+rank.next:'Maximum rank'):'Sign in to see your earned rank and owned uniforms. Previewing does not equip a uniform.';
+    $('rankLadder').innerHTML=RANKS.map((name,i)=>`<div class="rank-step ${p&&i===rank.index?'current-rank':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${name}<small>${(i*1000).toLocaleString()} XP${p&&i===rank.index?' · YOUR RANK':''}</small></span></div>`).join('');
+    $('serviceLoadouts').innerHTML=COSMETICS.map(item=>`<article class="order-card">${avatarPreview(item)}<h3>${item.name}</h3><p>${item.desc}</p><strong>${p?.equipped===item.id?'EQUIPPED':p?.inventory.includes(item.id)?'OWNED':item.price?item.price+' FIELD CASH':'STANDARD ISSUE'}</strong></article>`).join('');
+  }
+  $('btnService').onclick=()=>{api.stopModes();api.setMode('service');api.show('service');renderService();};
+  $('serviceBack').onclick=api.title;
+  $('serviceManage').onclick=()=>{selected='armory';open();};
   function render(){
     const p=cloud.profile;if(!p)return;
     const date=dayKey(p.serverNow),daily=p.daily.date===date?p.daily:{};
@@ -21,8 +45,14 @@ export function initCommand(api){
     $('cashBalance').textContent=p.cash.toLocaleString();$('profileXp').textContent=p.xp.toLocaleString()+' XP';
     $('titleWallet').textContent=p.cash.toLocaleString()+' FIELD CASH';
     $('titleRank').textContent=rankFor(p.xp);
+    const rank=rankProgress(p.xp);
+    $('rankProgressText').textContent=rank.next?rank.remaining.toLocaleString()+' XP to '+rank.next:'Command rank achieved';
+    $('rankProgressBar').style.width=rank.percent+'%';
+    renderService();
     $('callsignEdit').value=p.name;
     $('playerCode').value=cloud.token;
+    $('profileSaveStatus').textContent=cloud.saveStatus;
+    $('rememberProfile').checked=cloud.remember;
     if(document.activeElement!==$('racerName'))$('racerName').value=p.name;
     $('profileMetrics').innerHTML=[['MATCHES',p.stats.games||0],['WINS',p.stats.wins||0],['ELIMINATIONS',p.stats.kills||0],['BADGES',ACHIEVEMENTS.filter(a=>has('achievement:'+a.id)).length]]
       .map(([name,value])=>`<div><strong>${value}</strong><span>${name}</span></div>`).join('');
@@ -38,7 +68,7 @@ export function initCommand(api){
     $('accomplishmentGrid').innerHTML=ACHIEVEMENTS.map(a=>card(a,p.stats,'achievement:'+a.id,'achievement')).join('');
     $('armoryGrid').innerHTML=COSMETICS.map(item=>{
       const owned=p.inventory.includes(item.id),equipped=p.equipped===item.id;
-      return `<article class="order-card cosmetic"><div class="dogtag" style="--tag-color:${item.color}"><span>29</span><b>${esc(item.name)}</b></div><h3>${esc(item.name)}</h3><p>${esc(item.desc)}</p><div class="order-bottom"><strong>${owned?'OWNED':item.price+' FC'}</strong><button class="btn" data-buy="${item.id}" ${equipped||!owned&&p.cash<item.price?'disabled':''}>${equipped?'Equipped':owned?'Equip':'Buy cosmetic'}</button></div></article>`;
+      return `<article class="order-card cosmetic">${avatarPreview(item)}<div class="dogtag" style="--tag-color:${item.color}"><span>29</span><b>${esc(item.name)}</b></div><h3>${esc(item.name)}</h3><p>${esc(item.desc)}</p><div class="order-bottom"><strong>${owned?'OWNED':item.price+' FC'}</strong><button class="btn" data-buy="${item.id}" ${equipped||!owned&&p.cash<item.price?'disabled':''}>${equipped?'Equipped':owned?'Equip':'Buy cosmetic'}</button></div></article>`;
     }).join('');
     const recent=p.claims.slice(0,8);
     $('cashHistory').innerHTML=recent.length?recent.map(c=>`<div class="ledger-row"><span>${esc(c.source.startsWith('match:')?'Match earnings':c.source.startsWith('daily:')?'Daily play bonus':c.source.startsWith('shop:')?'Cosmetic purchase':c.source.startsWith('challenge:')?'Daily challenge':'Accomplishment')}</span><b>${c.cash>=0?'+':''}${c.cash} FC</b></div>`).join(''):'<p class="race-fine">No transactions yet. Deploy into a match to begin.</p>';
@@ -56,7 +86,7 @@ export function initCommand(api){
   async function open(){
     if(!cloud.token){login();return;}
     api.stopModes();api.setMode('command');api.show('command');selectTab(selected);status('Connecting to your player dossier…');
-    try{await cloud.ensure($('racerName').value);await cloud.refresh();render();status('Cloud save connected. Save your private player code before leaving or reloading.');}
+    try{await cloud.ensure($('racerName').value);await cloud.refresh();render();status('Cloud progress synced. '+cloud.saveStatus);}
     catch(e){status(e.message);}
   }
   $('btnCommand').onclick=open;
@@ -76,22 +106,25 @@ export function initCommand(api){
   };
   $('revealPassport').onclick=()=>{$('playerCode').type=$('playerCode').type==='password'?'text':'password';$('revealPassport').textContent=$('playerCode').type==='password'?'Reveal code':'Hide code';};
   $('restorePassport').onclick=()=>action($('restorePassport'),async()=>{await cloud.restore($('passportInput').value);$('passportInput').value='';});
+  $('rememberProfile').onchange=()=>{cloud.setRemember($('rememberProfile').checked);render();status(cloud.saveStatus);};
+  $('forgetDevice').onclick=()=>{const cleared=cloud.setRemember(false);render();status(cleared?'Profile forgotten on this device. Your current session and cloud progress are unchanged. Copy the recovery code to sign in later.':cloud.saveStatus);};
   $('refreshProfile').onclick=()=>action($('refreshProfile'),()=>cloud.refresh());
   window.addEventListener('b29:profile',render);
   function login(){
-    api.stopModes();api.setMode('playerLogin');api.show('playerLogin');$('loginStatus').textContent='Your progress is cloud-saved. Use your private code to sign in, or enlist a new recruit.';
+    api.stopModes();api.setMode('playerLogin');api.show('playerLogin');$('loginStatus').textContent='Create a profile once, or restore an existing one. Remember this device to return without entering a code.';
   }
   window.addEventListener('b29:login',login);
   $('loginBack').onclick=api.title;
   $('loginRestore').onclick=async()=>{
     const button=$('loginRestore');button.disabled=true;$('loginStatus').textContent='Checking your player code…';
-    try{await cloud.restore($('loginCode').value);$('loginCode').value='';selected='orders';await open();}
+    try{cloud.setRemember($('rememberLogin').checked);await cloud.restore($('loginCode').value);$('loginCode').value='';selected='orders';await open();}
     catch(e){$('loginStatus').textContent=e.message;}finally{button.disabled=false;}
   };
   $('loginCreate').onclick=async()=>{
     const button=$('loginCreate');button.disabled=true;$('loginStatus').textContent='Creating your cloud recruit…';
-    try{await cloud.create($('enlistName').value);selected='profile';await open();status('Recruit created. Save your private player code now: it is required to sign in after a reload or on a new device.');}
+    try{cloud.setRemember($('rememberLogin').checked);await cloud.create($('enlistName').value);selected='profile';await open();status('Profile created. '+cloud.saveStatus+' Keep a recovery code for another device.');}
     catch(e){$('loginStatus').textContent=e.message;}finally{button.disabled=false;}
   };
+  if(cloud.token)cloud.ensure().then(()=>{$('profileShortcut').textContent='Profile saved / manage';}).catch(()=>{$('profileShortcut').textContent='Reconnect saved profile';});
   return {open,render};
 }

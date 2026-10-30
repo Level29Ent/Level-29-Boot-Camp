@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 import * as A from './art.js';
 import {cloud} from './cloud.js';
-import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS} from './rules.js';
+import {thirdPersonView} from './war-view.js';
+import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS,rankFor} from './rules.js';
 import {FieldAudio} from './race-audio.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const collides=(x,z)=>Math.abs(x)>22||Math.abs(z)>32||WAR_COVER.some(c=>Math.abs(x-c.x)<c.w/2+.48&&Math.abs(z-c.z)<c.d/2+.48);
 export function initWar(api){
   const w={active:false,room:null};let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
-  let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],weapon=null,fireMouse=false;
-  let lastInput={},lastUi=0,lastNetwork=0,shotFlash=0,refreshing=false;
+  let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
+  let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
   let pendingJump=false,pendingReload=false,pendingFire=false,lastRtt=0;
   const audio=new FieldAudio();audio.volume=.22;
   const message=s=>{$('warStatus').textContent=s;};
@@ -27,8 +28,9 @@ export function initWar(api){
     if(code)cloud.rpc('room_leave',{code}).catch(()=>{});
     w.active=false;w.room=null;audio.stop();fireMouse=false;pendingJump=pendingReload=pendingFire=false;document.body.classList.remove('war-active');
     const useButton=$('touchControls')?.querySelector('[data-key="e"]');if(useButton)useButton.innerHTML='E<br><small>USE</small>';
+    const crouchButton=$('touchControls')?.querySelector('[data-key="c"]');if(crouchButton)crouchButton.innerHTML='C<br><small>CRAWL</small>';
     $('warHud').classList.add('hidden');$('warScores').classList.add('hidden');
-    if(weapon){weapon.parent?.remove(weapon);weapon=null;}
+    if(document.pointerLockElement===api.canvas)document.exitPointerLock();
     api.clearKeys();api.graphics(false);models.clear();tracers=[];
   };
   w.open=()=>{
@@ -120,7 +122,7 @@ export function initWar(api){
           const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(e.x,e.y,e.z),new THREE.Vector3(e.tx,e.ty,e.tz)]);
           const mat=new THREE.LineBasicMaterial({color:e.team==='blue'?'#8addff':'#ff8a64',transparent:true,opacity:.8});
           const line=new THREE.Line(geo,mat);api.world.add(line);tracers.push({line,age:0});
-          if(e.from===state.me){shotFlash=.09;api.tone(68,.06,'sawtooth',.05);if(e.hit)$('warReticle').classList.add('hit');setTimeout(()=>$('warReticle').classList.remove('hit'),100);}
+          if(e.from===state.me){api.tone(68,.06,'sawtooth',.05);if(e.hit)$('warReticle').classList.add('hit');setTimeout(()=>$('warReticle').classList.remove('hit'),100);}
         }
       }
       if(state.endedAt&&!ended)end();
@@ -131,6 +133,7 @@ export function initWar(api){
     api.graphics(true);api.clearWorld();api.show(null);api.setMode('playing');document.body.classList.add('war-active');
     $('warHud').classList.remove('hidden');api.setLook(me()?.team==='red'?Math.PI:0,.18);api.clearKeys();
     const useButton=$('touchControls')?.querySelector('[data-key="e"]');if(useButton)useButton.innerHTML='E<br><small>RELOAD</small>';
+    const crouchButton=$('touchControls')?.querySelector('[data-key="c"]');if(crouchButton)crouchButton.innerHTML='C<br><small>CROUCH</small>';
     A.applyEnv('combat',api.scene,api.lights,api.renderer);api.scene.fog=new THREE.Fog('#b8ae8e',65,160);
     api.box(58,.3,80,'#a99b70',0,-.18,0);
     const b=new A.Builder();
@@ -156,13 +159,14 @@ export function initWar(api){
     for(const p of w.room.players){
       const model=A.makePerson(api.world,p.x,p.z,'recruit',{skin:p.slot%4,pose:'aim',cover:false});
       A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');A.makeRifle(model.userData.body);
-      const cosmetic=COSMETICS.find(c=>c.id===p.equipped),color=cosmetic?.id!=='recruit'?cosmetic?.color:p.team==='blue'?'#8bd9ff':'#ff9576';
-      const tag=api.label(p.name+(p.bot?' · AI':''),0,2.9,0,color||'#fff',2);
+      const identity=p.id===w.room.me?cloud.profile:p;
+      A.applyLoadout(model,identity?.equipped,identity?.xp);
+      const cosmetic=COSMETICS.find(c=>c.id===identity?.equipped),color=cosmetic?.id!=='recruit'?cosmetic?.color:p.team==='blue'?'#8bd9ff':'#ff9576';
+      const tag=api.label(p.name+(p.bot?' · AI':Number.isFinite(identity?.xp)?' / '+rankFor(identity.xp):''),0,2.9,0,color||'#fff',2);
       api.world.remove(tag);model.add(tag);models.set(p.id,model);
-      if(p.id===w.room.me)model.visible=false;
+      if(p.id===w.room.me)tag.visible=false;
     }
     if(!api.camera.parent)api.scene.add(api.camera);
-    weapon=A.makeRifle(api.camera,.28,-.25,-.55);
     const own=me();visual.set(own.x,own.y,own.z);
     $('warModeBadge').textContent=(w.room.mode==='pvp'?'PVP':'PVBOT')+' / '+(own.team==='blue'?'ALPHA':'BRAVO');
     audio.mode=$('warAudio').value;audio.start(api.audioContext());
@@ -171,6 +175,7 @@ export function initWar(api){
   $('warAudio').onchange=()=>{audio.mode=$('warAudio').value;};
   $('warLeave').onclick=()=>{
     api.show('warExit');api.setMode('warExit');api.clearKeys();fireMouse=false;
+    if(document.pointerLockElement===api.canvas)document.exitPointerLock();
   };
   $('warStay').onclick=()=>{api.show(null);api.setMode('playing');api.clearKeys();};
   $('warLeaveConfirm').onclick=w.open;
@@ -179,8 +184,18 @@ export function initWar(api){
   $('warAgain').onclick=w.open;
   $('warResultCommand').onclick=()=>{w.exit();api.openCommand();};
   $('warResultTitleBack').onclick=()=>{w.exit();api.title();};
-  api.canvas.addEventListener('pointerdown',e=>{if(w.active&&api.mode()==='playing'&&e.pointerType==='mouse'&&e.button===0){fireMouse=true;pendingFire=true;}});
+  api.canvas.addEventListener('pointerdown',e=>{if(w.active&&api.mode()==='playing'&&e.pointerType==='mouse'&&e.button===0){fireMouse=true;pendingFire=true;
+    if(document.pointerLockElement!==api.canvas){
+      try{api.canvas.requestPointerLock?.()?.catch?.(()=>{});}catch{/* Drag-to-look remains available. */}
+    }}});
   window.addEventListener('pointerup',()=>{fireMouse=false;});
+  document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==api.canvas){fireMouse=false;api.clearKeys();}});
+  w.pointerMove=e=>{
+    if(document.pointerLockElement!==api.canvas)return false;
+    const {yaw,pitch}=api.look();
+    api.setLook(yaw-e.movementX*.003,Math.max(-.65,Math.min(.9,pitch+e.movementY*.002)));
+    return true;
+  };
   window.addEventListener('blur',()=>{fireMouse=false;});
   w.pause=()=>{
     if(!w.active)return;
@@ -193,7 +208,7 @@ export function initWar(api){
     if(playing){
       yaw+=((input.keys.arrowleft?1:0)-(input.keys.arrowright?1:0))*dt*1.8;
       pitch+=((input.keys.arrowdown?1:0)-(input.keys.arrowup?1:0))*dt*.7;
-      pitch=Math.max(-.35,Math.min(.6,pitch));api.setLook(yaw,pitch);
+      pitch=Math.max(-.65,Math.min(.9,pitch));api.setLook(yaw,pitch);
     }
     let dx=(input.keys.d?1:0)-(input.keys.a?1:0),dz=(input.keys.s?1:0)-(input.keys.w?1:0);
     if(input.joy.on){dx=input.joy.x;dz=input.joy.y;}
@@ -203,10 +218,6 @@ export function initWar(api){
     if(input.edges[' '])pendingJump=true;
     if(input.edges.r||input.edges.e)pendingReload=true;
     if(input.edges.j)pendingFire=true;
-    lastInput={dx:active?worldX:0,dz:active?worldZ:0,yaw,pitch:.18-pitch,
-      fire:active&&!!(input.keys.j||pendingFire||fireMouse),jump:active&&pendingJump,
-      crouch:!!input.keys.c,sprint:!!input.keys.shift,reload:!!(input.keys.r||pendingReload)};
-    if(input.edges[' ']||input.edges.r||input.edges.e)pollOnce();
     if(active){
       const speed=input.keys.c?2.5:input.keys.shift?6.7:4.5;
       const x=visual.x+worldX*speed*dt,z=visual.z+worldZ*speed*dt;
@@ -216,17 +227,24 @@ export function initWar(api){
     }
     for(const p of w.room.players){
       const model=models.get(p.id);if(!model)continue;
-      if(p.id===w.room.me)continue;
+      if(p.id===w.room.me){
+        model.visible=own.hp>0;model.position.copy(visual);model.rotation.y=yaw;
+        model.userData.pose=input.keys.c?'kneelaim':'aim';
+        A.animatePerson(model,active&&Math.hypot(dx,dz)>.1,performance.now()*.008);
+        continue;
+      }
       model.visible=p.hp>0;model.position.lerp(new THREE.Vector3(p.x,p.y,p.z),Math.min(1,dt*11));
-      model.rotation.y=p.yaw;model.userData.pose='aim';A.animatePerson(model,!!p.moving,performance.now()*.008,!!p.crouch);
+      model.rotation.y=p.yaw;model.userData.pose=p.crouch?'kneelaim':'aim';A.animatePerson(model,!!p.moving,performance.now()*.008);
       model.children.at(-1)?.lookAt(api.camera.position);
     }
-    const eye=visual.clone().add(new THREE.Vector3(0,(input.keys.c?1.15:1.65),0));
-    api.camera.position.copy(eye);
-    api.camera.fov=input.keys.k?38:70;api.camera.updateProjectionMatrix();
-    api.camera.lookAt(eye.clone().add(new THREE.Vector3(-Math.sin(yaw),Math.tan(.18-pitch),-Math.cos(yaw)).normalize().multiplyScalar(40)));
-    if(weapon){weapon.visible=own.hp>0;weapon.position.z=-.55+shotFlash*.55;weapon.position.y=-.25+Math.sin(performance.now()*.008)*.006*(Math.hypot(dx,dz)>.1?3:1);}
-    shotFlash=Math.max(0,shotFlash-dt);
+    const view=thirdPersonView(visual,yaw,pitch,!!input.keys.k,!!input.keys.c,w.room.players,w.room.me);
+    api.camera.position.copy(view.camera);api.camera.fov=view.fov;api.camera.updateProjectionMatrix();
+    api.camera.lookAt(view.camera.clone().add(view.direction));
+    const ownModel=models.get(w.room.me);if(ownModel)ownModel.visible=own.hp>0&&!view.hidePlayer;
+    lastInput={dx:active?worldX:0,dz:active?worldZ:0,yaw:view.yaw,pitch:view.pitch,
+      fire:active&&!!(input.keys.j||pendingFire||fireMouse),jump:active&&pendingJump,
+      crouch:active&&!!input.keys.c,sprint:active&&!!input.keys.shift,reload:active&&!!(input.keys.r||pendingReload)};
+    if(input.edges[' ']||input.edges.r||input.edges.e)pollOnce();
     for(const t of tracers)t.age+=dt;
     tracers=tracers.filter(t=>{if(t.age>.14){api.world.remove(t.line);t.line.geometry.dispose();t.line.material.dispose();return false;}return true;});
     audio.tick(dt,api.muted());
@@ -257,7 +275,9 @@ export function initWar(api){
       ctx.fillStyle=p.id===room.me?'#ffc72c':p.team===own.team?'#83dbff':'#ff8566';ctx.beginPath();ctx.arc(x,y,p.id===room.me?4:2.8,0,Math.PI*2);ctx.fill();}
   }
   async function end(){
-    ended=true;stop();audio.stop();fireMouse=false;api.clearKeys();api.setMode('warResult');api.show('warResult');
+    ended=true;stop();audio.stop();fireMouse=false;
+    if(document.pointerLockElement===api.canvas)document.exitPointerLock();
+    api.clearKeys();api.setMode('warResult');api.show('warResult');
     $('warHud').classList.add('hidden');$('warScores').classList.add('hidden');
     const own=me(),ownScore=w.room.scores[own.team],other=w.room.scores[own.team==='blue'?'red':'blue'];
     $('warResultHeading').textContent=ownScore===other?'STALEMATE':ownScore>other?'SQUAD VICTORY':'REGROUP. REDEPLOY.';
@@ -273,6 +293,6 @@ export function initWar(api){
   }
   w.text=()=>({active:w.active,room:w.room?.code,kind:w.room?.mode,elapsed:+elapsed().toFixed(2),
     scores:w.room?.scores,me:me(),players:w.room?.players.map(({id,name,team,bot,hp,x,y,z,kills,deaths})=>({id,name,team,bot,hp,x,y,z,kills,deaths})),
-    input:lastInput,ended,cloud:true});
+    input:lastInput,view:'third-person',ended,cloud:true});
   return w;
 }

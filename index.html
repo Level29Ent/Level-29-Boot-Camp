@@ -81,11 +81,13 @@
   <section id="service" class="screen hidden">
     <div class="sheet command-sheet">
       <div class="brief-phase">LEVEL 29 / RANKS & AVATAR KITS</div>
-      <h2 class="sheet-title">120 WAYS TO STAND OUT.</h2>
-      <p class="brief-text">12 palettes × 10 wearable designs. Free visual styles for your next race, training session or third-person War match. No stat boosts.</p>
+      <h2 class="sheet-title">121 WAYS TO STAND OUT.</h2>
+      <p class="brief-text">Featured Level 29 Jester Mascot plus 12 palettes × 10 real 3D wearable designs: hats, caps, hair, shirts, hoodies and mascots. Free visual styles for your next race, training session or third-person War match. No stat boosts.</p>
       <p class="race-fine">These styles save only in this browser and are visible on your screen. Other players will still see your cloud Armory kit until the multiplayer service supports sharing styles. Your rank and owned kits stay unchanged.</p>
+      <div class="wardrobe-stage"><canvas id="wardrobeCanvas" aria-label="Rotating 3D clothing and material preview"></canvas><p id="wardrobeLabel" aria-live="polite">Select View in 3D to inspect a wearable.</p><button class="btn" id="wardrobeRotate">Pause rotation</button></div>
       <p id="avatarSelected" class="race-fine"></p>
       <label class="race-label" for="avatarPalette">FILTER BY PALETTE</label><select id="avatarPalette"></select>
+      <label class="race-label" for="avatarCategory">CLOTHING TYPE</label><select id="avatarCategory"></select>
       <div class="avatar-pagination"><button id="avatarPrev" class="btn">Previous styles</button><span id="avatarPage" aria-live="polite"></span><button id="avatarNext" class="btn">Next styles</button></div>
       <div id="avatarStyles" class="order-grid"></div>
       <p id="avatarSaveStatus" class="race-fine" role="status"></p><button id="avatarReset" class="btn">Use cloud Armory kit instead</button>

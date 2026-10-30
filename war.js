@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as A from './art.js';
 import {cloud} from './cloud.js';
-import {selectedStyle} from './avatar-styles.js';
+import {selectedStyle,styleFor} from './avatar-styles.js';
 import {thirdPersonView} from './war-view.js';
 import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS,rankFor} from './rules.js';
 import {FieldAudio} from './race-audio.js';
@@ -159,7 +159,11 @@ export function initWar(api){
     const red=api.label('BRAVO',0,4,-32,'#ff9576',5);red.rotation.y=Math.PI;
     for(const p of w.room.players){
       const model=A.makePerson(api.world,p.x,p.z,'recruit',{skin:p.slot%4,pose:'aim',cover:false});
-      A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');A.makeRifle(model.userData.body);
+      const localStyle=p.id===w.room.me?styleFor(selectedStyle()):null;
+      if(!localStyle||localStyle.pattern.kind==='shirt')A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');
+      // Team identifiers stay visible even when a hat or mascot replaces the helmet.
+      for(const i of [0,2])new A.Builder().box(.235,.065,.245,p.team==='blue'?'#3a9fdf':'#e75e4e',0,-.25,0).mesh(model.userData.limbs[i]);
+      A.makeRifle(model.userData.body);
       const identity=p.id===w.room.me?cloud.profile:p;
       A.applyLoadout(model,identity?.equipped,identity?.xp,p.id===w.room.me?selectedStyle():null);
       const cosmetic=COSMETICS.find(c=>c.id===identity?.equipped),color=cosmetic?.id!=='recruit'?cosmetic?.color:p.team==='blue'?'#8bd9ff':'#ff9576';

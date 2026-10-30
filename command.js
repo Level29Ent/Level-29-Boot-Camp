@@ -1,5 +1,5 @@
 import {cloud} from './cloud.js';
-import {AVATAR_STYLES,STYLE_PALETTES,selectedStyle,selectStyle,styleFor,stylePreview} from './avatar-styles.js';
+import {AVATAR_STYLES,STYLE_PALETTES,STYLE_CATEGORIES,selectedStyle,selectStyle,styleFor,stylePreview} from './avatar-styles.js';
 import {ACHIEVEMENTS,COSMETICS,dailyChallenges,dayKey,rankFor,rankProgress,RANKS} from './rules.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -32,25 +32,28 @@ export function initCommand(api){
     </svg>`;
   }
   function renderStyles(){
-    const palette=$('avatarPalette').value;
-    const styles=AVATAR_STYLES.filter(style=>!palette||style.palette.id===palette);
-    const pages=Math.ceil(styles.length/pageSize);stylePage=Math.max(0,Math.min(stylePage,pages-1));
+    const palette=$('avatarPalette').value,category=$('avatarCategory').value;
+    const styles=AVATAR_STYLES.filter(style=>(!palette||style.palette.id===palette)&&(!category||style.pattern.category===category));
+    const pages=Math.max(1,Math.ceil(styles.length/pageSize));stylePage=Math.max(0,Math.min(stylePage,pages-1));
     const current=selectedStyle();
     $('avatarSelected').textContent=current?'Selected: '+styleFor(current).name+' · Browser-local appearance.':'Using your cloud Armory kit. Select a free style below to override its appearance on this device.';
     $('avatarPage').textContent='Page '+(stylePage+1)+' of '+pages+' · '+styles.length+' styles';
     $('avatarPrev').disabled=stylePage===0;$('avatarNext').disabled=stylePage===pages-1;
-    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><button class="btn" data-style="${style.id}" ${style.id===current?'disabled':''}>${style.id===current?'Selected':'Use this style'}</button></article>`).join('');
+    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><p>${style.pattern.material} · ${style.pattern.category}</p><button class="btn" data-preview="${style.id}">View in 3D</button><button class="btn" data-style="${style.id}" ${style.id===current?'disabled':''}>${style.id===current?'Selected':'Use this style'}</button></article>`).join('')||'<p class="race-fine">No styles match these filters. Try Mascots for the Signature collection.</p>';
   }
-  $('avatarPalette').innerHTML='<option value="">All palettes / 120 styles</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
+  $('avatarPalette').innerHTML='<option value="">All palettes / '+AVATAR_STYLES.length+' styles</option><option value="signature">Signature / Jester Mascot</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
+  $('avatarCategory').innerHTML='<option value="">All clothing types</option>'+STYLE_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');
+  $('avatarCategory').onchange=()=>{stylePage=0;renderStyles();};
   $('avatarPalette').onchange=()=>{stylePage=0;renderStyles();};
   $('avatarPrev').onclick=()=>{stylePage--;renderStyles();};
   $('avatarNext').onclick=()=>{stylePage++;renderStyles();};
+  function previewStyle(id){window.dispatchEvent(new CustomEvent('b29:avatar-preview',{detail:{id}}));}
   function chooseStyle(id){
     const result=selectStyle(id);if(!result.ok)return;
-    renderStyles();
+    renderStyles();previewStyle(id);
     $('avatarSaveStatus').textContent=result.saved?'Appearance saved on this device. Your next deployment uses this style.':'Appearance selected for this session only: browser storage is unavailable.';
   }
-  $('avatarStyles').addEventListener('click',e=>{const button=e.target.closest('[data-style]');if(button)chooseStyle(button.dataset.style);});
+  $('avatarStyles').addEventListener('click',e=>{const button=e.target.closest('[data-style]'),preview=e.target.closest('[data-preview]');if(button)chooseStyle(button.dataset.style);if(preview)previewStyle(preview.dataset.preview);});
   $('avatarReset').onclick=()=>chooseStyle(null);
   function renderService(){
     renderStyles();
@@ -59,7 +62,7 @@ export function initCommand(api){
     $('rankLadder').innerHTML=RANKS.map((name,i)=>`<div class="rank-step ${p&&i===rank.index?'current-rank':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${name}<small>${(i*1000).toLocaleString()} XP${p&&i===rank.index?' · YOUR RANK':''}</small></span></div>`).join('');
     $('serviceLoadouts').innerHTML=COSMETICS.map(item=>`<article class="order-card">${avatarPreview(item)}<h3>${item.name}</h3><p>${item.desc}</p><strong>${p?.equipped===item.id?'EQUIPPED':p?.inventory.includes(item.id)?'OWNED':item.price?item.price+' FIELD CASH':'STANDARD ISSUE'}</strong></article>`).join('');
   }
-  $('btnService').onclick=()=>{api.stopModes();api.setMode('service');api.show('service');renderService();};
+  $('btnService').onclick=()=>{api.stopModes();api.setMode('service');api.show('service');renderService();previewStyle(selectedStyle()||AVATAR_STYLES[0].id);};
   $('serviceBack').onclick=api.title;
   $('serviceManage').onclick=()=>{selected='armory';open();};
   function render(){

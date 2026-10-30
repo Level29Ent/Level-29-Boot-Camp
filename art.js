@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import {cosmeticFor,rankProgress} from './rules.js';
 import {styleFor} from './avatar-styles.js';
+import {addWearables} from './wearables.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* ---------- seeded random ---------- */
@@ -502,13 +503,7 @@ export function applyLoadout(model,equipped='recruit',xp,styleId=null){
   const add=(builder,parent)=>{const mesh=builder.mesh(parent);u.loadout.push(mesh);};
   const style=styleFor(styleId);u.avatarStyle=style?.id||null;
   if(style){
-    const b=new Builder(),{base,accent}=style.palette;
-    for(const side of [-1,1]){
-      b.box(.56,.46,.075,base,0,1.46,side*.2);
-      for(const [x,y,w,h] of style.pattern.rects)b.box(w,h,.025,accent,x,1.46+y,side*.255);
-    }
-    add(b,u.body);
-    for(const i of [0,2])add(new Builder().box(.17,.08,.18,accent,0,-.15,0),u.limbs[i]);
+    u.loadout.push(...addWearables(model,style));
   }else if(item.id!=='recruit'){
     const b=new Builder();
     b.box(.54,.42,.075,'#28332d',0,1.47,-.195).box(.54,.42,.075,'#28332d',0,1.47,.195);

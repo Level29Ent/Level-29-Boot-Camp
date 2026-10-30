@@ -11,8 +11,8 @@ export function initMout(api){
   const clock=()=>api.now?api.now():performance.now();let lastClock=clock();
   function setNotice(text){notice=text;noticeUntil=state.elapsed+2;}
   function controls(enabled){
-    const labels=enabled?{'e':'E<br><small>BREACH</small>',' ':'R<br><small>RELOAD</small>','c':'C<br><small>CROUCH</small>'}:
-      {'e':'E<br><small>USE</small>',' ':'↑<br><small>JUMP</small>','c':'C<br><small>CRAWL</small>'};
+    const labels=enabled?{'e':'E<br><small>BREACH</small>',' ':'R<br><small>RELOAD</small>','c':'C<br><small>CROUCH</small>','shift':'RUN<br><small>SPRINT</small>'}:
+      {'e':'E<br><small>USE</small>',' ':'↑<br><small>JUMP</small>','c':'C<br><small>CRAWL</small>','shift':'⇧<br><small>SPRINT</small>'};
     for(const [key,label] of Object.entries(labels)){
       const button=$('touchControls').querySelector(`[data-key="${key}"]`);if(button)button.innerHTML=label;
     }

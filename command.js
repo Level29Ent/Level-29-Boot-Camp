@@ -1,9 +1,11 @@
 import {cloud} from './cloud.js';
+import {AVATAR_STYLES,STYLE_PALETTES,selectedStyle,selectStyle,styleFor,stylePreview} from './avatar-styles.js';
 import {ACHIEVEMENTS,COSMETICS,dailyChallenges,dayKey,rankFor,rankProgress,RANKS} from './rules.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function initCommand(api){
-  let selected='orders',loading=false;
+  let selected='orders',loading=false,stylePage=0;
+  const pageSize=10;
   const status=(s)=>{$('commandStatus').textContent=s;};
   function has(source){return cloud.profile?.claims.some(c=>c.source===source);}
   function card(def,stats,source,kind){
@@ -29,7 +31,29 @@ export function initCommand(api){
       <path d="M83 39h4M96 39h4" stroke="#1b241b" stroke-width="3"/>
     </svg>`;
   }
+  function renderStyles(){
+    const palette=$('avatarPalette').value;
+    const styles=AVATAR_STYLES.filter(style=>!palette||style.palette.id===palette);
+    const pages=Math.ceil(styles.length/pageSize);stylePage=Math.max(0,Math.min(stylePage,pages-1));
+    const current=selectedStyle();
+    $('avatarSelected').textContent=current?'Selected: '+styleFor(current).name+' · Browser-local appearance.':'Using your cloud Armory kit. Select a free style below to override its appearance on this device.';
+    $('avatarPage').textContent='Page '+(stylePage+1)+' of '+pages+' · '+styles.length+' styles';
+    $('avatarPrev').disabled=stylePage===0;$('avatarNext').disabled=stylePage===pages-1;
+    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><button class="btn" data-style="${style.id}" ${style.id===current?'disabled':''}>${style.id===current?'Selected':'Use this style'}</button></article>`).join('');
+  }
+  $('avatarPalette').innerHTML='<option value="">All palettes / 120 styles</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
+  $('avatarPalette').onchange=()=>{stylePage=0;renderStyles();};
+  $('avatarPrev').onclick=()=>{stylePage--;renderStyles();};
+  $('avatarNext').onclick=()=>{stylePage++;renderStyles();};
+  function chooseStyle(id){
+    const result=selectStyle(id);if(!result.ok)return;
+    renderStyles();
+    $('avatarSaveStatus').textContent=result.saved?'Appearance saved on this device. Your next deployment uses this style.':'Appearance selected for this session only: browser storage is unavailable.';
+  }
+  $('avatarStyles').addEventListener('click',e=>{const button=e.target.closest('[data-style]');if(button)chooseStyle(button.dataset.style);});
+  $('avatarReset').onclick=()=>chooseStyle(null);
   function renderService(){
+    renderStyles();
     const p=cloud.profile,rank=rankProgress(p?.xp);
     $('serviceProgress').textContent=p?rank.name+' · '+rank.xp.toLocaleString()+' XP · '+(rank.next?rank.remaining.toLocaleString()+' XP to '+rank.next:'Maximum rank'):'Sign in to see your earned rank and owned uniforms. Previewing does not equip a uniform.';
     $('rankLadder').innerHTML=RANKS.map((name,i)=>`<div class="rank-step ${p&&i===rank.index?'current-rank':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${name}<small>${(i*1000).toLocaleString()} XP${p&&i===rank.index?' · YOUR RANK':''}</small></span></div>`).join('');

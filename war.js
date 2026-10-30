@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as A from './art.js';
 import {cloud} from './cloud.js';
+import {selectedStyle} from './avatar-styles.js';
 import {thirdPersonView} from './war-view.js';
 import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS,rankFor} from './rules.js';
 import {FieldAudio} from './race-audio.js';
@@ -160,7 +161,7 @@ export function initWar(api){
       const model=A.makePerson(api.world,p.x,p.z,'recruit',{skin:p.slot%4,pose:'aim',cover:false});
       A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');A.makeRifle(model.userData.body);
       const identity=p.id===w.room.me?cloud.profile:p;
-      A.applyLoadout(model,identity?.equipped,identity?.xp);
+      A.applyLoadout(model,identity?.equipped,identity?.xp,p.id===w.room.me?selectedStyle():null);
       const cosmetic=COSMETICS.find(c=>c.id===identity?.equipped),color=cosmetic?.id!=='recruit'?cosmetic?.color:p.team==='blue'?'#8bd9ff':'#ff9576';
       const tag=api.label(p.name+(p.bot?' · AI':Number.isFinite(identity?.xp)?' / '+rankFor(identity.xp):''),0,2.9,0,color||'#fff',2);
       api.world.remove(tag);model.add(tag);models.set(p.id,model);

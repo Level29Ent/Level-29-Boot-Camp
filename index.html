@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="./race.css" />
 <link rel="stylesheet" href="./command.css" />
 <link rel="stylesheet" href="./war.css" />
+<link rel="stylesheet" href="./mout.css" />
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
@@ -68,6 +69,7 @@
       <div class="profile-strip"><span id="titleRank">RECRUIT</span><span id="titleWallet">CLOUD PLAYER DOSSIER</span><button id="profileShortcut">Player login / profile</button></div>
       <div class="menu">
         <button class="btn primary" id="btnWar">5v5 War</button>
+        <button class="btn" id="btnMout">MOUT Shoot House</button>
         <button class="btn" id="btnRace">60-Second Races</button>
         <button class="btn" id="btnCommand">Command & Rewards</button>
         <button class="btn" id="btnService">Ranks & Avatar Kits</button>
@@ -77,6 +79,23 @@
       </div>
     </div>
   </section>
+
+  <section id="moutBrief" class="screen hidden">
+    <div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL TACTICAL TRAINING / SOLO TARGET DRILL</div>
+      <h2 class="sheet-title">MOUT<br>SHOOT HOUSE</h2>
+      <p class="brief-text">Military Operations on Urban Terrain. Breach four ground-floor container rooms, climb the metal ramp, then clear two stacked upper rooms and extract from the catwalk.</p>
+      <ul class="mout-orders"><li>180 seconds. Clear all 12 red threats and enter all six rooms.</li><li>Blue targets are NO SHOOT: each hit costs 250 drill points.</li><li>Move within 2m of a door and press E / BREACH. Doors block shots until opened.</li><li>WASD / joystick moves; drag or captured mouse aims; J / left mouse fires; K / right mouse aims down sights; R or Space reloads; C crouches; Shift sprints.</li><li>Touch: left joystick moves, swipe the scene to look, hold FIRE, tap BREACH / RELOAD. P / Escape pauses the local timer.</li></ul>
+      <p class="race-fine">Practice targets only. No cloud login needed. Drill scores are session-local and do not award global rank, cash or XP.</p>
+      <div class="menu row"><button id="moutDeploy" class="btn primary">Deploy into shoot house</button><button id="moutBack" class="btn">Back to base</button></div>
+    </div>
+  </section>
+  <section id="moutPause" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL DRILL PAUSED / CLOCK STOPPED</div><h2 class="sheet-title">HOLD POSITION</h2><div class="menu"><button id="moutResume" class="btn primary">Resume drill</button><button id="moutAbort" class="btn">Abort to base</button></div></div></section>
+  <section id="moutResult" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">MOUT / AFTER-ACTION REPORT</div><h2 id="moutResultTitle" class="sheet-title">EXTRACTION COMPLETE</h2><p id="moutResultSummary" class="brief-text"></p><p id="moutResultStats" class="brief-text"></p><p class="race-fine">Accuracy = threat hits / shots fired. Drill score rewards threats, accuracy and time remaining; each no-shoot hit deducts 250 points. Session-local practice only.</p><div class="menu row"><button id="moutRetry" class="btn primary">Run drill again</button><button id="moutResultBack" class="btn">Back to base</button></div></div></section>
+  <aside id="moutHud" class="hidden" aria-label="Shoot house tactical HUD">
+    <div class="mout-top"><div><small>CLEARANCE TIME</small><strong id="moutClock">0:00 / 3:00</strong></div><div><small>ACCURACY</small><strong id="moutAccuracy">0%</strong></div><div><small>MAGAZINE</small><strong id="moutAmmo">12 / 12</strong></div><button id="moutPause">Pause drill</button></div>
+    <div class="mout-mission"><b id="moutClearance"></b><p id="moutObjective" role="status" aria-live="polite"></p><small id="moutRoomList"></small></div>
+    <div class="mout-reticle" aria-hidden="true">+</div><div class="mout-hint">RED = THREAT · BLUE = NO SHOOT<br>E breach · R / Space reload · J fire · K aim · C crouch</div>
+  </aside>
 
   <section id="service" class="screen hidden">
     <div class="sheet command-sheet">

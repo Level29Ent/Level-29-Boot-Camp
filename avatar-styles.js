@@ -26,9 +26,12 @@ export const STYLE_PATTERNS=[
   {id:'checker',name:'Bear Mascot',kind:'bear',category:'Mascots',material:'Plush'},
   {id:'beacon',name:'Fox Mascot',kind:'fox',category:'Mascots',material:'Plush'}
 ];
-export const AVATAR_STYLES=STYLE_PALETTES.flatMap(palette=>STYLE_PATTERNS.map(pattern=>({
+export const JESTER_STYLE={id:'level29-jester',name:'Level 29 / Jester Mascot',
+  palette:{id:'signature',name:'Signature',base:'#8500a8',accent:'#ffc400'},
+  pattern:{id:'jester',name:'Jester Mascot',kind:'jester',category:'Mascots',material:'Velvet'}};
+export const AVATAR_STYLES=[JESTER_STYLE,...STYLE_PALETTES.flatMap(palette=>STYLE_PATTERNS.map(pattern=>({
   id:palette.id+'-'+pattern.id,name:palette.name+' / '+pattern.name,palette,pattern
-})));
+})))];
 export const STYLE_CATEGORIES=[...new Set(STYLE_PATTERNS.map(p=>p.category))];
 const KEY='b29:avatar-style:v1';
 export const styleFor=id=>AVATAR_STYLES.find(style=>style.id===id)||null;
@@ -46,6 +49,21 @@ export function selectStyle(id){
 // Lightweight catalog silhouettes; the live 3D viewer shows actual materials.
 export function stylePreview(style){
   const {base,accent}=style.palette,{kind,material}=style.pattern;
+  if(kind==='jester')return `<svg class="avatar-preview" viewBox="0 0 180 220" role="img" aria-label="Level 29 purple green and gold jester mascot">
+    <ellipse cx="90" cy="210" rx="48" ry="6" fill="#101510"/>
+    <path d="M61 130h25v70H58zM94 130h25l3 70H94zM35 87h21v60H35zM124 87h21v60h-21z" fill="#8500a8"/>
+    <path d="M55 80h70v60H55z" fill="#219f16"/><path d="M55 80h35v60H55z" fill="#8500a8"/>
+    <path d="M54 83l18 22 18-13 18 13 18-22" fill="#ffc400" stroke="#151215" stroke-width="3"/>
+    <ellipse cx="90" cy="62" rx="32" ry="33" fill="#e9bc60" stroke="#151215" stroke-width="4"/>
+    <path d="M59 51Q26 9 23 52L45 45 62 55M120 51q34-42 37 1l-22-7-16 10" fill="#22a918" stroke="#151215" stroke-width="4"/>
+    <path d="M66 46Q50 0 90 0q32 0 25 46z" fill="#9200ae" stroke="#151215" stroke-width="4"/>
+    <path d="M64 48Q33 26 29 68l20-13M117 48q31-22 35 20l-20-13" fill="#ffc400" stroke="#151215" stroke-width="4"/>
+    <path d="M59 57q14-7 31 1 18-8 31-1l-7 17-24-9-24 9z" fill="#111014"/>
+    <path d="M67 60l15 4-12 3M98 64l15-4-3 7" fill="white"/>
+    <path d="M65 76q25 13 50 0-4 30-25 29T65 76" fill="#121114" stroke="#a47a24" stroke-width="3"/>
+    <path d="M72 82l5 9 5-7 5 10 5-9 5 9 5-10 5 7 3-9M75 96l5-8 5 10 5-9 5 9 5-10 5 8" fill="white"/>
+    <g fill="#ffc400" stroke="#141215" stroke-width="3"><circle cx="24" cy="51" r="6"/><circle cx="156" cy="51" r="6"/><circle cx="29" cy="68" r="6"/><circle cx="152" cy="68" r="6"/><circle cx="90" cy="45" r="6"/></g>
+  </svg>`;
   const headwear={
     cap:`<path d="M66 35q0-27 24-27t24 27z" fill="${base}"/><path d="M62 34h59l14 7H62z" fill="${accent}"/>`,
     boonie:`<ellipse cx="90" cy="35" rx="38" ry="9" fill="${accent}"/><path d="M68 33l6-24h32l6 24z" fill="${base}"/>`,

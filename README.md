@@ -33,3 +33,8 @@ The 120 local styles now use 10 recognizable silhouettes per palette: baseball c
 Use the palette and clothing-type filters, then **View in 3D** to inspect the actual rotating character and **Use this style** to equip for the next deployment. Preview and selection are separate. Pause rotation to inspect the silhouette. The showroom uses the same wearable geometry/materials as gameplay, with cloth weave, knit ribs, matte cotton/canvas/fleece, directional hair texture and soft plush bump mapping. No external model/texture downloads are needed. Materials are cached; clothing geometry is disposed on swap and showroom rendering pauses offscreen.
 
 War keeps team-colored armbands on both upper arms. Hats/hair/hoods/mascot heads replace the local helmet to prevent overlapping headgear; shirts keep the helmet. Cloud-owned kits and other players are unchanged. The new wardrobe is still browser-local, not synchronized to other clients. These are stylized 3D assets, not photorealistic licensed character models.
+
+## Featured Level 29 Jester Mascot
+The wardrobe now includes a 121st choice, **Level 29 / Jester Mascot**, inspired by the user-provided jester reference: purple/green/gold curved cap points with gold bell tips, a gold face with black eye mask and white lenses, a pointed-tooth grin, and a matching bell collar and outfit. It is a modeled full-body mascot, not the uploaded image pasted on a face. Find it first in the full catalog, or filter **Signature / Jester Mascot** and **Mascots**. The original 120 saved styles remain valid.
+
+The featured mascot uses the same preview/equip/persistence flow and browser-local multiplayer limitation as other styles. The reference image is not bundled or transmitted to another service.

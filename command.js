@@ -34,14 +34,14 @@ export function initCommand(api){
   function renderStyles(){
     const palette=$('avatarPalette').value,category=$('avatarCategory').value;
     const styles=AVATAR_STYLES.filter(style=>(!palette||style.palette.id===palette)&&(!category||style.pattern.category===category));
-    const pages=Math.ceil(styles.length/pageSize);stylePage=Math.max(0,Math.min(stylePage,pages-1));
+    const pages=Math.max(1,Math.ceil(styles.length/pageSize));stylePage=Math.max(0,Math.min(stylePage,pages-1));
     const current=selectedStyle();
     $('avatarSelected').textContent=current?'Selected: '+styleFor(current).name+' · Browser-local appearance.':'Using your cloud Armory kit. Select a free style below to override its appearance on this device.';
     $('avatarPage').textContent='Page '+(stylePage+1)+' of '+pages+' · '+styles.length+' styles';
     $('avatarPrev').disabled=stylePage===0;$('avatarNext').disabled=stylePage===pages-1;
-    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><p>${style.pattern.material} · ${style.pattern.category}</p><button class="btn" data-preview="${style.id}">View in 3D</button><button class="btn" data-style="${style.id}" ${style.id===current?'disabled':''}>${style.id===current?'Selected':'Use this style'}</button></article>`).join('');
+    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><p>${style.pattern.material} · ${style.pattern.category}</p><button class="btn" data-preview="${style.id}">View in 3D</button><button class="btn" data-style="${style.id}" ${style.id===current?'disabled':''}>${style.id===current?'Selected':'Use this style'}</button></article>`).join('')||'<p class="race-fine">No styles match these filters. Try Mascots for the Signature collection.</p>';
   }
-  $('avatarPalette').innerHTML='<option value="">All palettes / 120 styles</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
+  $('avatarPalette').innerHTML='<option value="">All palettes / '+AVATAR_STYLES.length+' styles</option><option value="signature">Signature / Jester Mascot</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
   $('avatarCategory').innerHTML='<option value="">All clothing types</option>'+STYLE_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');
   $('avatarCategory').onchange=()=>{stylePage=0;renderStyles();};
   $('avatarPalette').onchange=()=>{stylePage=0;renderStyles();};

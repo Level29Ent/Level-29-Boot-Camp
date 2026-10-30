@@ -67,7 +67,48 @@ export function addWearables(model,style){
       for(const fore of model.userData.fore)ball(fore,base,0,-.29,-.02,.115,.12,.12);
     }
   }
-  if(kind==='cap'){
+  if(kind==='jester'){
+    const purple='#9200b1',green='#24ac18',gold='#ffc400',black='#100d14',skin='#edbf62';
+    torso(true);
+    rounded(body,green,.145,1.42,-.2,.27,.6,.045,.025);
+    // Curved tapered cloth lobes: gold piping remains visible around each point.
+    function lobe(points,color,radius){
+      const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
+      for(let i=0;i<14;i++){
+        const a=curve.getPoint(i/14),b=curve.getPoint((i+1)/14),delta=b.clone().sub(a);
+        const bottom=radius*(1-i/14),top=radius*(1-(i+1)/14)+.005;
+        const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),delta.clone().normalize());
+        const rot=new THREE.Euler().setFromQuaternion(q),mid=a.clone().add(b).multiplyScalar(.5);
+        shape(body,new THREE.CylinderGeometry(top+.012,bottom+.012,delta.length()+.007,12),gold,mid.x,mid.y,mid.z,1,1,1,rot.x,rot.y,rot.z);
+        shape(body,new THREE.CylinderGeometry(top,bottom,delta.length()+.01,12),color,mid.x,mid.y,mid.z-.018,1,1,1,rot.x,rot.y,rot.z);
+      }
+      const tip=curve.getPoint(1);ball(body,gold,tip.x,tip.y,tip.z-.015,.052,.052,.052,'Velvet');
+    }
+    ball(body,skin,0,2.02,0,.275,.3,.255);
+    lobe([[0,2.23,.03],[0,2.54,.04],[-.04,2.69,.02],[-.09,2.61,-.01]],purple,.17);
+    for(const side of [-1,1]){
+      lobe([[side*.15,2.2,0],[side*.4,2.49,.01],[side*.55,2.43,0],[side*.58,2.28,-.02]],green,.13);
+      lobe([[side*.2,2.15,-.06],[side*.45,2.27,-.08],[side*.53,2.09,-.09],[side*.49,1.96,-.1]],gold,.12);
+      lobe([[side*.22,2.02,.08],[side*.34,1.91,.06],[side*.36,1.76,.04]],purple,.09);
+      // Raised black domino mask and narrow white eye lenses.
+      ball(body,black,side*.115,2.07,-.236,.135,.072,.038,'Hair');
+      shape(body,new THREE.SphereGeometry(1,16,10),'#ffffff',side*.12,2.075,-.273,.078,.027,.012,0,0,-side*.22,'Hair');
+      ball(body,skin,side*.21,1.97,-.17,.067,.1,.06);
+      lobe([[side*.06,1.74,.02],[side*.25,1.69,.03],[side*.4,1.52,.06]],side===-1?gold:green,.08);
+      rounded(model.userData.limbs[side===-1?1:3],side===-1?green:purple,0,-.21,-.15,.28,.46,.035,.025);
+    }
+    ball(body,skin,0,2,-.265,.065,.08,.07);
+    // Recessed grin, gold lip rim, and two rows of distinct pointed teeth.
+    ball(body,gold,0,1.88,-.215,.205,.115,.055);
+    ball(body,black,0,1.89,-.26,.179,.084,.026,'Hair');
+    for(let i=0;i<9;i++){
+      const x=(i-4)*.033,arc=Math.abs(i-4)*.005;
+      shape(body,new THREE.ConeGeometry(.019,.055,8),'#fffdf0',x,1.913+arc,-.29,1,1,.45,0,0,Math.PI,'Hair');
+      shape(body,new THREE.ConeGeometry(.018,.047,8),'#fffdf0',x,1.864+arc,-.292,1,1,.45,0,0,0,'Hair');
+    }
+    shape(body,new THREE.ConeGeometry(.12,.23,12),purple,0,1.57,-.23,1,1,.35,0,0,Math.PI);
+    ball(body,gold,0,1.44,-.24,.045,.045,.045);
+  }else if(kind==='cap'){
     crown(base,.19);ball(body,accent,0,2.06,-.235,.23,.018,.17);
     rounded(body,accent,0,2.12,-.19,.085,.055,.015,.015);
     for(let i=0;i<6;i++)shape(body,new THREE.TorusGeometry(.203,.003,4,24,Math.PI/2),accent,0,2.04,0,1,1,1,0,i*Math.PI/3,Math.PI/2);

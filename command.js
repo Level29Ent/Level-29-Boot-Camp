@@ -23,6 +23,8 @@ export function initCommand(api){
     $('titleRank').textContent=rankFor(p.xp);
     $('callsignEdit').value=p.name;
     $('playerCode').value=cloud.token;
+    $('profileSaveStatus').textContent=cloud.saveStatus;
+    $('rememberProfile').checked=cloud.remember;
     if(document.activeElement!==$('racerName'))$('racerName').value=p.name;
     $('profileMetrics').innerHTML=[['MATCHES',p.stats.games||0],['WINS',p.stats.wins||0],['ELIMINATIONS',p.stats.kills||0],['BADGES',ACHIEVEMENTS.filter(a=>has('achievement:'+a.id)).length]]
       .map(([name,value])=>`<div><strong>${value}</strong><span>${name}</span></div>`).join('');
@@ -56,7 +58,7 @@ export function initCommand(api){
   async function open(){
     if(!cloud.token){login();return;}
     api.stopModes();api.setMode('command');api.show('command');selectTab(selected);status('Connecting to your player dossier…');
-    try{await cloud.ensure($('racerName').value);await cloud.refresh();render();status('Cloud save connected. Save your private player code before leaving or reloading.');}
+    try{await cloud.ensure($('racerName').value);await cloud.refresh();render();status('Cloud progress synced. '+cloud.saveStatus);}
     catch(e){status(e.message);}
   }
   $('btnCommand').onclick=open;
@@ -76,22 +78,25 @@ export function initCommand(api){
   };
   $('revealPassport').onclick=()=>{$('playerCode').type=$('playerCode').type==='password'?'text':'password';$('revealPassport').textContent=$('playerCode').type==='password'?'Reveal code':'Hide code';};
   $('restorePassport').onclick=()=>action($('restorePassport'),async()=>{await cloud.restore($('passportInput').value);$('passportInput').value='';});
+  $('rememberProfile').onchange=()=>{cloud.setRemember($('rememberProfile').checked);render();status(cloud.saveStatus);};
+  $('forgetDevice').onclick=()=>{const cleared=cloud.setRemember(false);render();status(cleared?'Profile forgotten on this device. Your current session and cloud progress are unchanged. Copy the recovery code to sign in later.':cloud.saveStatus);};
   $('refreshProfile').onclick=()=>action($('refreshProfile'),()=>cloud.refresh());
   window.addEventListener('b29:profile',render);
   function login(){
-    api.stopModes();api.setMode('playerLogin');api.show('playerLogin');$('loginStatus').textContent='Your progress is cloud-saved. Use your private code to sign in, or enlist a new recruit.';
+    api.stopModes();api.setMode('playerLogin');api.show('playerLogin');$('loginStatus').textContent='Create a profile once, or restore an existing one. Remember this device to return without entering a code.';
   }
   window.addEventListener('b29:login',login);
   $('loginBack').onclick=api.title;
   $('loginRestore').onclick=async()=>{
     const button=$('loginRestore');button.disabled=true;$('loginStatus').textContent='Checking your player code…';
-    try{await cloud.restore($('loginCode').value);$('loginCode').value='';selected='orders';await open();}
+    try{cloud.setRemember($('rememberLogin').checked);await cloud.restore($('loginCode').value);$('loginCode').value='';selected='orders';await open();}
     catch(e){$('loginStatus').textContent=e.message;}finally{button.disabled=false;}
   };
   $('loginCreate').onclick=async()=>{
     const button=$('loginCreate');button.disabled=true;$('loginStatus').textContent='Creating your cloud recruit…';
-    try{await cloud.create($('enlistName').value);selected='profile';await open();status('Recruit created. Save your private player code now: it is required to sign in after a reload or on a new device.');}
+    try{cloud.setRemember($('rememberLogin').checked);await cloud.create($('enlistName').value);selected='profile';await open();status('Profile created. '+cloud.saveStatus+' Keep a recovery code for another device.');}
     catch(e){$('loginStatus').textContent=e.message;}finally{button.disabled=false;}
   };
+  if(cloud.token)cloud.ensure().then(()=>{$('profileShortcut').textContent='Profile saved / manage';}).catch(()=>{$('profileShortcut').textContent='Reconnect saved profile';});
   return {open,render};
 }

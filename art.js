@@ -214,7 +214,10 @@ export function animatePerson(p, moving, t, crouch = false) {
     aR.rotation.set(1.25, 0, -0.35); fR.rotation.x = 0.55; aL.rotation.set(1.45, 0, 0.42); fL.rotation.x = 0.22; b.rotation.y = 0.15;
   } else if (pose === 'aim') {
     aR.rotation.set(1.25, 0, -0.35); fR.rotation.x = 0.55; aL.rotation.set(1.45, 0, 0.42); fL.rotation.x = 0.22;
-    lL.rotation.x = 0.18; lR.rotation.x = -0.18; b.rotation.y = 0.15;
+    lL.rotation.x = moving ? s * 0.55 : 0.18; lR.rotation.x = moving ? -s * 0.55 : -0.18;
+    sL.rotation.x = moving ? -Math.max(0, Math.sin(t + 1.2)) * 0.65 : 0;
+    sR.rotation.x = moving ? -Math.max(0, Math.sin(t + 1.2 + Math.PI)) * 0.65 : 0;
+    b.rotation.y = 0.15;
   } else if (moving) {
     lL.rotation.x = s * 0.7; lR.rotation.x = -s * 0.7;
     sL.rotation.x = -Math.max(0, Math.sin(t + 1.2)) * 1.1; sR.rotation.x = -Math.max(0, Math.sin(t + 1.2 + Math.PI)) * 1.1;

@@ -33,3 +33,5 @@
  .daily-cash{grid-template-columns:1fr;gap:10px;padding:18px}.daily-cash>strong{font-size:40px}.daily-cash .btn{width:100%}
  .order-grid{grid-template-columns:1fr}.order-card{padding:18px}.profile-settings .join-row{flex-wrap:wrap}.profile-settings input{flex-basis:60%}.command-bottom small{max-width:100%}
 }
+
+.remember-choice{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.5;color:var(--khaki);margin:16px 0}.remember-choice input[type=checkbox]{width:20px;min-height:20px;height:20px;flex:none;margin:0;accent-color:var(--gold)}#profileSaveStatus{color:var(--gold)}

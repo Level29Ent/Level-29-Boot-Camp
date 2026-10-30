@@ -1,6 +1,16 @@
 # Level-29-Boot-Camp
 Level 29 Boot Camp game
 
+## Play without registration
+**Save name / play → Save name & play** stores only a local callsign and opens solo game choices immediately. Blank names default to Recruit. **Play without saving** uses a session guest name without replacing a stored name. If browser storage is denied, play still works and the screen explains that the name is session-only.
+
+- **60-Second Races → Play now vs 7 bots** starts the existing local AI race, with shuffled courses, 60-second rounds and bottom-three disqualification. No HTTP, cloud account or login prompt.
+- **5v5 War → Play local 5v5** starts a separate local bot simulation (one player + four allies vs five bots), with cover-aware navigation, line-of-sight shooting, reloading, scores and respawns. It uses the existing third-person arena/controls and is labeled LOCAL PRACTICE.
+- **Continue training** uses existing browser-local campaign records. Appearance choices remain local.
+- Optional cloud race/War buttons, online friend rooms, cash/XP and Armory ownership still require the external game service. Local practice does not create a cloud profile, replace a private recovery code, mint rewards or synchronize progress. The external registration service is not repaired by this client-side fallback.
+
+Cloud registration/restore lives under the expandable **Optional cloud saves, rewards & online friends** panel. Network/unreadable-response errors explain the available local-play path. A pending or failed optional registration does not disable local play or take the player away from gameplay when it completes. Remembered-profile auto-reconnect is silent if it fails, rather than forcing a login screen during play.
+
 ## Saving progress
 - Create a profile once in **Player login / profile**, or restore your existing recovery code. Leave **Remember this device** enabled only on a trusted browser. The next visit restores that profile automatically.
 - Cash, XP and match stats remain authoritative in the external cloud service. No profile/reward server code is included here.

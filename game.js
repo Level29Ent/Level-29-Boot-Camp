@@ -324,7 +324,7 @@ mout=initMout({world,scene,camera,lights,renderer,canvas:$('c'),clearWorld,label
   stopModes:()=>{mout?.exit();war.exit();race.exit();},show:showScreen,setMode:m=>{mode=m},mode:()=>mode,
   input:()=>({keys,edges,joy}),clearKeys:()=>{keys={};edges={};joy={x:0,y:0,on:false,src:''};},startAudio,
   gamepadLook:()=>{const gp=[...(navigator.getGamepads?.()||[])].find(g=>g&&g.connected);return gp?{x:Math.abs(gp.axes[2]||0)>.18?gp.axes[2]:0,y:Math.abs(gp.axes[3]||0)>.18?gp.axes[3]:0}:null;}});
-commandCenter=initCommand({stopModes:()=>{mout.exit();war.exit();race.exit();},show:showScreen,setMode:m=>{mode=m},title});
+commandCenter=initCommand({stopModes:()=>{mout.exit();war.exit();race.exit();},show:showScreen,setMode:m=>{mode=m},title,playRace:()=>{$('raceSolo').click();},playWar:()=>{$('warBots').click();},playTraining:()=>{$('btnStart').click();}});
 const baseText=window.render_game_to_text;
 window.render_game_to_text=()=>{const detail=war.active?war.text():null;return JSON.stringify({...JSON.parse(baseText()),
   ...(detail?{kind:'war',name:'ALPHA vs BRAVO',player:{x:+detail.me.x.toFixed(2),y:+detail.me.y.toFixed(2),z:+detail.me.z.toFixed(2)},time:detail.elapsed}:{}),

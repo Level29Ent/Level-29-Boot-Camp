@@ -3,6 +3,7 @@ import {createCourseRotation} from './race-rotation.js';
 import {RACE_DURATION,RACE_DISQUALIFIED,rankRaceEntries} from './race-rules.js';
 import {FieldAudio} from './race-audio.js';
 import {cloud} from './cloud.js';
+import {cleanCallsign,localCallsign} from './local-player.js';
 import {cosmeticFor,rankFor} from './rules.js';
 
 const $=id=>document.getElementById(id);
@@ -48,12 +49,14 @@ export function initRace(api){
   };
   r.open=()=>{
     r.exit();api.setMode('raceMenu');api.show('raceMenu');
-    status('Courses are shuffled automatically. Create a room to race with friends.');
+    if(!cloud.profile)$('racerName').value=localCallsign();
+    status('Play solo immediately — no account needed. Cloud rooms and rewards are optional.');
   };
   $('btnRace').onclick=r.open;
   $('raceBack').onclick=()=>{r.exit();api.title();};
-  $('raceSolo').onclick=async()=>{
-    const button=$('raceSolo');button.disabled=true;status('Preparing persistent race…');
+  $('raceSolo').onclick=()=>{leave();$('racerName').value=cleanCallsign(name());start(nextCourse());};
+  $('raceCloudSolo').onclick=async()=>{
+    const button=$('raceCloudSolo');button.disabled=true;status('Connecting to optional cloud race…');
     try{
       leave();await cloud.ensure(name());
       room=await request('',{name:name(),course:nextCourse()});r.online=true;
@@ -271,7 +274,7 @@ export function initRace(api){
     ended=true;r.elapsed=RACE_DURATION;api.clearKeys();audio.stop();
     $('raceBoard').classList.add('hidden');$('raceCountdown').classList.add('hidden');
     api.setMode('result');api.show('raceResult');drawResults();
-    $('raceRewardText').textContent='Saving match earnings…';
+    $('raceRewardText').textContent=r.online?'Saving match earnings…':'Local practice complete · No cloud cash or XP. Your callsign, training progress and style stay in this browser.';
     if(r.online){
       stopPolling();const code=room.code;
       setTimeout(async()=>{

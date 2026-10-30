@@ -173,10 +173,9 @@
         <div>
           <label class="race-label" for="racerName">YOUR CALLSIGN</label>
           <input id="racerName" maxlength="18" value="Recruit" autocomplete="off">
-          <div class="course-picker">
-            <div class="race-label">DEPLOYMENT / <span id="courseNumber">001</span> OF 100</div>
-            <div class="course-select-row"><button id="racePrev" aria-label="Previous course">‹</button><select id="raceCourse" aria-label="Select race course"></select><button id="raceNext" aria-label="Next course">›</button></div>
-            <p id="raceCourseInfo"></p>
+          <div class="course-rotation">
+            <div class="race-label">RANDOM COURSE ROTATION</div>
+            <p>All 100 courses shuffled each session. No repeats until all 100 are drawn. The host sets the rotation for friends. Course revealed at the start.</p>
           </div>
           <button class="btn primary wide" id="raceSolo">Deploy against 7 bots</button>
           <p class="race-fine">Joystick, keyboard and gamepad supported. Fastest finish wins; otherwise furthest progress wins. Places 6–8 are disqualified at the buzzer, even if they finish.</p>
@@ -207,7 +206,7 @@
       <div class="brief-phase">AFTER-ACTION REPORT / 60 SECONDS</div>
       <h2 class="sheet-title" id="raceResultTitle">RACE COMPLETE</h2>
       <p id="raceResultText" class="brief-text"></p><p id="raceRewardText" class="race-fine" role="status"></p><div id="raceResults"></div>
-      <div class="menu row"><button class="btn primary" id="raceAgain">Race again</button><button class="btn" id="raceChoose">Choose course</button><button class="btn" id="raceQuit">Title</button></div>
+      <div class="menu row"><button class="btn primary" id="raceAgain">Next shuffled race</button><button class="btn" id="raceQuit">Title</button></div>
     </div>
   </section>
   <section id="warMenu" class="screen hidden">

@@ -1,4 +1,5 @@
 import {createRaceCourses} from './race-courses.js';
+import {createCourseRotation} from './race-rotation.js';
 import {RACE_DURATION,RACE_DISQUALIFIED,rankRaceEntries} from './race-rules.js';
 import {FieldAudio} from './race-audio.js';
 import {cloud} from './cloud.js';
@@ -9,6 +10,7 @@ const colors=['#79d7ff','#ff9c65','#b6e77b','#d5a5ff','#ffdc72','#8ae0c1','#f8a9
 const botNames=['Sgt. Steel','Viper','Ghost','Echo','Raider','Falcon','Bulldog'];
 export function initRace(api){
   const campaign=api.levels.slice(),courses=createRaceCourses(),audio=new FieldAudio();
+  const nextCourse=createCourseRotation(courses.length);
   const r={active:false,online:false,finished:false,elapsed:0,finishTime:null,entries:[],bots:[],course:0};
   let room=null,token='',pollTimer=null,busy=false,pollFailures=0,anchor=0,syncedElapsed=-5;
   let countdown=-3,roundStarted=false,ended=false,models=new Map(),lastDraw=0;
@@ -45,24 +47,15 @@ export function initRace(api){
   };
   r.open=()=>{
     r.exit();api.setMode('raceMenu');api.show('raceMenu');
-    $('raceCourse').innerHTML=courses.map((c,i)=>`<option value="${i}">${String(i+1).padStart(3,'0')} / ${c.name} / ${c.env}</option>`).join('');
-    $('raceCourse').value=r.course;updateCourse();status('Create a private room, then send its code to friends.');
+    status('Courses are shuffled automatically. Create a room to race with friends.');
   };
-  function updateCourse(){
-    r.course=+$('raceCourse').value;
-    const c=courses[r.course];
-    $('raceCourseInfo').textContent=c.segs.map(s=>s.t.replaceAll('_',' ')).join(' · ');
-    $('courseNumber').textContent=String(r.course+1).padStart(3,'0');
-  }
-  $('raceCourse').onchange=updateCourse;
-  $('racePrev').onclick=()=>{$('raceCourse').value=(r.course+99)%100;updateCourse();};
-  $('raceNext').onclick=()=>{$('raceCourse').value=(r.course+1)%100;updateCourse();};
   $('btnRace').onclick=r.open;
   $('raceBack').onclick=()=>{r.exit();api.title();};
   $('raceSolo').onclick=async()=>{
     const button=$('raceSolo');button.disabled=true;status('Preparing persistent race…');
     try{
-      leave();room=await request('',{name:name(),course:r.course});r.online=true;
+      leave();await cloud.ensure(name());
+      room=await request('',{name:name(),course:nextCourse()});r.online=true;
       const state=await request('/'+room.code+'/start',{});applyState(state);poll();
     }catch(e){status(e.message);}finally{button.disabled=false;}
   };
@@ -70,7 +63,11 @@ export function initRace(api){
   $('raceVolume').oninput=()=>{audio.volume=+$('raceVolume').value/100;$('volumeValue').textContent=$('raceVolume').value+'%';};
   $('createRoom').onclick=async()=>{
     const b=$('createRoom');b.disabled=true;status('Creating room…');
-    try{leave();const state=await request('',{name:name(),course:r.course});token=state.token;room=state;r.online=true;showRoom();poll();}
+    try{
+      leave();await cloud.ensure(name());
+      const state=await request('',{name:name(),course:nextCourse()});
+      token=state.token;room=state;r.online=true;showRoom();poll();
+    }
     catch(e){status(e.message);}finally{b.disabled=false;}
   };
   $('joinRoom').onclick=async()=>{
@@ -83,7 +80,7 @@ export function initRace(api){
   function showRoom(){
     api.setMode('raceLobby');api.show('raceLobby');
     $('lobbyCode').textContent=room.code;
-    $('lobbyCourse').textContent='COURSE '+(room.course+1)+' / '+courses[room.course].name;
+    $('lobbyCourse').textContent='SHUFFLED COURSE / REVEALED AT DEPLOYMENT';
     $('roomNotice').textContent='Send friends this app link and room code. Up to six human racers; bots fill eight starting slots. Rooms and rewards are stored in the cloud.';
     refreshLobby();
   }
@@ -265,7 +262,7 @@ export function initRace(api){
     if(paused)pausedAt=performance.now();
     else if(pausedAt){soloEpoch+=performance.now()-pausedAt;pausedAt=0;}
   };
-  r.retry=()=>r.online?r.open():start(r.course);
+  r.retry=()=>r.online?r.open():start(nextCourse());
   function end(){
     ended=true;r.elapsed=RACE_DURATION;api.clearKeys();audio.stop();
     $('raceBoard').classList.add('hidden');$('raceCountdown').classList.add('hidden');
@@ -290,10 +287,9 @@ export function initRace(api){
     $('raceResultTitle').textContent=own.disqualified?'DISQUALIFIED':rank===1?'MISSION: FIRST PLACE':'QUALIFIED';
     $('raceResultText').textContent=courses[r.course].name+' · '+RACE_DURATION.toFixed(2)+'-second round · You placed '+rank+' of '+list.length+'. Bottom '+RACE_DISQUALIFIED+' disqualified.';
     $('raceResults').innerHTML=list.map((e,i)=>`<div class="result-racer ${e.disqualified?'is-disqualified':''} ${e.type==='YOU'?'is-you':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${escape(e.name)}<small>${e.type} · ${e.disqualified?'DISQUALIFIED':'QUALIFIED'}</small></span><strong>${e.finish!==null?e.finish.toFixed(2)+'s':Math.floor(e.progress*100)+'% / DNF'}</strong></div>`).join('');
-    $('raceAgain').textContent=r.online?'New room / race':'Race again';
+    $('raceAgain').textContent='Next shuffled race';
   }
-  $('raceAgain').onclick=()=>{if(r.online)r.open();else start(r.course);};
-  $('raceChoose').onclick=r.open;
+  $('raceAgain').onclick=()=>{if(r.online)r.open();else start(nextCourse());};
   $('raceQuit').onclick=()=>{r.exit();api.title();};
   r.isOnline=()=>r.active&&r.online;
   r.audio=audio;r.courses=courses;r.progress=progress;

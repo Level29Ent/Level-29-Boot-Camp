@@ -7,9 +7,8 @@
 .race-setup{display:grid;grid-template-columns:1.2fr 1fr;gap:34px;margin-top:26px}
 .race-label,.race-audio label,.room-code-label{display:block;font-size:var(--race-small);letter-spacing:.14em;font-weight:700;color:var(--khaki);margin-bottom:8px}
 .race-setup input,.race-setup select,.race-audio select{background:#151810;border:1px solid #737962;color:#f1ece0;font-family:var(--font-body);font-size:var(--race-base);padding:11px 12px;border-radius:2px;min-height:46px;max-width:100%}
-#racerName{width:100%}.course-picker{margin-top:20px}.course-select-row{display:flex;gap:6px}.course-select-row select{width:100%;min-width:0}
-.course-select-row button{flex-shrink:0;width:44px;border:1px solid #737962;background:transparent;color:var(--gold);font-size:28px;cursor:pointer}
-#raceCourseInfo{font-size:14px;text-transform:capitalize;color:#d3c9b2;line-height:1.5;min-height:42px;margin:10px 0 16px}
+#racerName{width:100%}.course-rotation{margin:20px 0;padding:16px;border:1px solid var(--border);background:rgba(255,199,44,.04)}
+.course-rotation p{font-size:16px;color:#d3c9b2;line-height:1.5;margin:0}
 .wide{width:100%;min-width:0}.race-fine{font-size:14px;line-height:1.5;color:#c5bda8;margin-top:12px}
 .friend-panel{border-left:1px solid var(--border);padding-left:32px}.friend-panel h3{font:900 27px var(--font-display);letter-spacing:.04em}
 .friend-panel p{font-size:16px;color:#d3c9b2;line-height:1.45;margin:9px 0 16px}

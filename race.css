@@ -1,0 +1,48 @@
+:root{--race-small:clamp(12px,.8rem,14px);--race-base:clamp(16px,1.2vw,18px)}
+.race-sheet{width:min(1000px,94vw);padding:32px 38px;background:linear-gradient(125deg,rgba(37,39,27,.98),rgba(16,18,14,.98));border-top-color:var(--gold)}
+.race-heading{display:flex;justify-content:space-between;gap:20px;margin-top:18px}
+.race-heading .sheet-title{font-size:clamp(40px,5.2vw,68px);line-height:.95}
+.race-stamp{font-family:var(--font-display);color:var(--gold);font-size:clamp(50px,7vw,80px);line-height:.9;text-align:right;border-left:1px solid var(--border);padding-left:25px}
+.race-stamp small{display:block;font:700 var(--race-small) var(--font-body);letter-spacing:.16em;margin-top:10px}
+.race-setup{display:grid;grid-template-columns:1.2fr 1fr;gap:34px;margin-top:26px}
+.race-label,.race-audio label,.room-code-label{display:block;font-size:var(--race-small);letter-spacing:.14em;font-weight:700;color:var(--khaki);margin-bottom:8px}
+.race-setup input,.race-setup select,.race-audio select{background:#151810;border:1px solid #737962;color:#f1ece0;font-family:var(--font-body);font-size:var(--race-base);padding:11px 12px;border-radius:2px;min-height:46px;max-width:100%}
+#racerName{width:100%}.course-picker{margin-top:20px}.course-select-row{display:flex;gap:6px}.course-select-row select{width:100%;min-width:0}
+.course-select-row button{flex-shrink:0;width:44px;border:1px solid #737962;background:transparent;color:var(--gold);font-size:28px;cursor:pointer}
+#raceCourseInfo{font-size:14px;text-transform:capitalize;color:#d3c9b2;line-height:1.5;min-height:42px;margin:10px 0 16px}
+.wide{width:100%;min-width:0}.race-fine{font-size:14px;line-height:1.5;color:#c5bda8;margin-top:12px}
+.friend-panel{border-left:1px solid var(--border);padding-left:32px}.friend-panel h3{font:900 27px var(--font-display);letter-spacing:.04em}
+.friend-panel p{font-size:16px;color:#d3c9b2;line-height:1.45;margin:9px 0 16px}
+.join-row{display:flex;gap:8px;margin-top:12px}.join-row input{width:100%;min-width:0;text-transform:uppercase;letter-spacing:.12em}.join-row .btn{min-width:70px;padding:10px}
+#roomStatus{min-height:42px;color:#ffdc72;font-size:14px;margin-bottom:0}.race-audio{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:26px;padding-top:18px;border-top:1px solid var(--border)}
+.race-audio label{margin:0}.race-audio select{font-size:14px;min-height:44px;max-width:280px}.race-audio input{width:100px;accent-color:var(--gold);min-height:44px}.race-audio label[for=raceVolume]{margin-left:auto}
+.race-footer{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:20px}.race-footer .btn{min-width:0;font-size:14px}.race-footer span{font-size:12px;color:#c5bda8}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none!important}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+#lobbyCode{font-family:var(--font-display);font-size:clamp(54px,9vw,88px);letter-spacing:.16em;color:var(--gold);margin:8px 0 18px}
+.roster-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:18px}.roster-row b{font-size:12px;color:var(--gold)}#lobbyPlayers{margin:22px 0}.bot-row{color:var(--khaki)}
+#raceBoard{position:absolute;z-index:6;left:16px;top:108px;width:200px;pointer-events:none;background:rgba(15,20,13,.88);border:1px solid var(--border);padding:10px 12px;backdrop-filter:blur(6px)}
+.race-board-head{font-size:12px;letter-spacing:.12em;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:8px}.race-board-head span{display:block;font-size:12px;color:#e0dccb;margin-top:5px;letter-spacing:.03em}
+.race-standing{display:grid;grid-template-columns:15px 1fr 38px;gap:7px;padding:7px 0;font-size:14px;align-items:center}.race-standing b{color:#b8bea8}.race-standing strong{text-align:right;color:#e0dccb;font-size:12px}.race-standing small,.result-racer small{display:block;font-size:12px;letter-spacing:.08em;color:#c5bda8}.is-you{color:var(--gold)}.is-you strong{color:var(--gold)}
+#raceCountdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 clamp(120px,25vw,240px) var(--font-display);color:var(--gold);z-index:8;text-shadow:0 6px 0 #53121c;pointer-events:none}
+#raceResults{margin-top:20px}.result-racer{display:grid;grid-template-columns:36px 1fr auto;gap:14px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:18px}.result-racer>b{font:900 26px var(--font-display)}.result-racer strong{font-size:18px;font-variant-numeric:tabular-nums}.result-racer.is-you{background:rgba(255,199,44,.08)}
+.race-active .hud-tc{max-width:min(460px,45vw)}.race-active .hud-tl{max-width:32vw}.race-active .hud-level{font-size:22px}
+.race-active .hud-bl{bottom:60px}.race-active .debug{display:block;color:#e0dccb;background:#14180f;z-index:8}
+@media(max-width:700px){
+ .race-sheet{padding:22px 20px;max-height:94dvh}.race-heading{margin-top:14px}.race-heading .sheet-title{font-size:42px}.race-stamp{font-size:58px;padding-left:12px}
+ .race-setup{grid-template-columns:1fr;gap:24px;margin-top:20px}.friend-panel{border-left:0;border-top:1px solid var(--border);padding:20px 0 0}
+ .race-audio{gap:8px}.race-audio select{width:100%;max-width:none}.race-audio label[for=raceVolume]{margin-left:0}.race-audio input{flex:1}.race-footer{align-items:flex-start;flex-direction:column}
+ #raceBoard{top:148px;left:8px;width:150px;padding:8px}.race-standing{font-size:12px;gap:4px;grid-template-columns:12px 1fr 33px;padding:4px 0}.race-standing small{display:none}.race-board-head{font-size:12px}
+ .race-active .hud-tc{max-width:96vw;top:88px;width:96vw}.race-active .hud-tl{max-width:64vw;left:8px;top:8px}.race-active .hud-level{font-size:21px}.race-active .hud-tr{top:8px;right:8px;min-width:88px;padding:8px}.race-active .objective{font-size:14px;padding:7px 10px}
+ .race-active .hud-bl{bottom:250px;left:8px}.race-active .bar-wrap span{width:65px}.race-active .bar{width:100px}.race-active .prompt{font-size:15px;top:58%;max-width:90vw;text-align:center;width:max-content}
+ .race-active .shout{top:43%}.race-active .debug{bottom:46px;font-size:12px;white-space:nowrap}
+ .race-active #touchControls .joy{width:128px;height:128px;left:16px;bottom:60px}
+ .race-active #touchControls .joy-knob{width:58px;height:58px;margin:-29px 0 0 -29px}
+ .race-active #touchControls .actions{grid-template-columns:repeat(3,48px);gap:8px;right:12px;bottom:60px}
+ .race-active #touchControls .actions button{width:48px;height:48px;font-size:16px}
+ body.race-active:has(#hud:not(.hidden)) #joyBtn{right:12px;bottom:10px;transform:none}
+ body.race-active:has(#hud:not(.hidden)) #audioBtn{left:12px;right:auto;bottom:10px;transform:none}
+ #raceResult .sheet{padding:22px 18px}.result-racer{font-size:16px;padding:8px 0;gap:8px}.result-racer strong{font-size:16px}
+ .title-content{padding-top:18px;padding-bottom:45px}.title-content .logo{width:54px;height:54px;margin-bottom:12px}.title-content .menu{margin-top:18px;gap:8px}
+}
+@media(max-height:620px) and (min-width:701px){.title-content .logo{display:none}.title-content .game-title{font-size:72px}.title-content .tagline{font-size:17px}.title-content .menu{gap:6px;margin-top:16px}.title-content .btn{padding:9px 18px}.sheet{max-height:95vh}.race-standing{padding:4px 0}}
+@media(prefers-reduced-motion:reduce){.title-art{animation:none}}

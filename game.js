@@ -4,6 +4,7 @@ import {buildCampaign,OBSTACLES,STATIONS} from './campaign.js';
 import {initRace} from './race.js';
 import {initWar} from './war.js';
 import {initCommand} from './command.js';
+import {cloud} from './cloud.js';
 import {loadTraining,saveTraining} from './player-save.js';
 const $=id=>document.getElementById(id);
 const levels=buildCampaign();
@@ -33,7 +34,7 @@ function clearWorld(){world.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o
 function buildLevel(n){clearWorld();idx=n;time=score=stage=walk=0;stamina=breath=hp=ehp=100;velY=0;grounded=true;yaw=0;pitch=.18;shots=12;hits=rangeX=rangeY=0;drillCount=drillCorrect=drillClock=0;drillCommand=null;drillWait=1;attackCd=enemyClock=attackAnim=holdProgress=0;carrying=helped=false;const kind=levels[idx].kind;
 A.reseed(29+n*7);zones=[];gTargets=[];station=null;rifleMesh=null;canMesh=null;laneEnd=-88;A.applyEnv(kind==='gauntlet'?levels[n].env:kind,scene,lights,renderer);const env=A.ENV[kind];
 if(kind==='gauntlet')buildGauntlet(levels[n]);else dressLevel(kind);
-player=person(0,7,kind==='receive'?'civ':'recruit',{skin:0,cover:!['receive','swim','combat','range'].includes(kind)});player.rotation.y=0;
+player=person(0,7,kind==='receive'?'civ':'recruit',{skin:0,cover:!['receive','swim','combat','range'].includes(kind)});player.rotation.y=0;A.applyLoadout(player,cloud.profile?.equipped,cloud.profile?.xp);
 if(kind==='receive'){checkpoint(0,2,'Stand on the yellow footprints');checkpoint(-5,-8,'Collect your utilities');checkpoint(5,-18,'Collect your pack');checkpoint(0,-30,'Report to your drill instructor');di=person(0,-32,'di',{skin:1});di.rotation.y=Math.PI;label('THROUGH THESE PORTALS',0,8.6,-38.6,'#ffc72c',9);label('GEAR ISSUE',-5,2.6,-8);label('PACK ISSUE',5,2.6,-18);}
 if(kind==='drill'){player.position.set(0,0,0);ring(0,0).arrow.visible=false;di=person(0,-5,'di',{skin:3});for(let x=-2;x<=2;x++)for(let z=0;z<3;z++)if(x!==0||z!==0)platoon.push(person(x*2,z*3,'recruit',{cover:true}));di.rotation.y=Math.PI;}
 if(kind==='course'){wall(-5);checkpoint(0,-9,'Jump the low wall');wire(-20);checkpoint(0,-25,'Crawl under the wire');wall(-37,3);checkpoint(0,-42,'Climb the high wall');wall(-53);checkpoint(0,-57,'Clear the final wall');checkpoint(0,-65,'Reach the finish');label('CONFIDENCE',0,5.4,-65,'#ffc72c',7);}
@@ -44,7 +45,7 @@ if(kind==='range'){player.position.set(0,0,4);A.makeRifle(player.userData.body);
 if(kind==='crucible'){checkpoint(-3,-3,'Collect the supply crate');wall(-15);checkpoint(0,-20,'Carry supplies over the wall');wire(-31);checkpoint(0,-37,'Carry supplies under the wire');checkpoint(3,-47,'Help your teammate');teammate=person(3,-47,'recruit',{cover:true,pack:true,skin:1,pose:'kneel'});teammate.rotation.y=Math.PI*.8;animatePerson(teammate,false,0);checkpoint(0,-63,'March together to the summit');wall(-56);checkpoint(0,-77,'Reach the emblem ceremony');di=person(0,-79,'di',{skin:3});flag(-5,-78,'usmc');label('HONOR · COURAGE · COMMITMENT',0,5,-80,'#ffc72c',10);}
 if(kind==='grad'){checkpoint(0,-10,'Join your platoon');for(let x=-3;x<=3;x++)for(let z=0;z<3;z++)if(x!==0||z!==0)person(x*2,-10+z*3,'recruit',{cover:true});checkpoint(0,-26,'Receive your Eagle, Globe, and Anchor');di=person(0,-28,'di',{skin:1});di.rotation.y=Math.PI;label('LEVEL 29',0,7.2,-36,'#ffc72c',8);}
 setActiveMarker();camera.position.copy(player.position).add(new THREE.Vector3(0,5,10));camera.lookAt(player.position.clone().add(new THREE.Vector3(0,1.2,-2)));setupHud();}
-function swapPlayer(variant,opts){const old=player;player=person(old.position.x,old.position.z,variant,{skin:0,...opts});player.position.copy(old.position);player.rotation.y=old.rotation.y;world.remove(old);}
+function swapPlayer(variant,opts){const old=player;player=person(old.position.x,old.position.z,variant,{skin:0,...opts});player.position.copy(old.position);player.rotation.y=old.rotation.y;A.applyLoadout(player,cloud.profile?.equipped,cloud.profile?.xp);world.remove(old);}
 const R=(a,b)=>a+A.rand()*(b-a);
 /* ===== 100-level campaign: gauntlets, firing stations, drill instructor voice ===== */
 let zones=[],station=null,laneEnd=-88,rifleMesh=null,lastMissVo=-9,canMesh=null,gTargets=[],lastBreathVo=-9,windCount=0;
@@ -307,7 +308,7 @@ window.advanceTime=(ms,draw=true)=>{if(race?.active)race.advance(ms,update);else
 // Build an atmospheric depot before training starts.
 window.__qa={get player(){return player},brief,begin,get idx(){return idx},get checkpoints(){return checkpoints},get stage(){return stage},get station(){return station},get laneEnd(){return laneEnd},get zones(){return zones},get mode(){return mode},get score(){return score},levels,aimAt(t){const v=new THREE.Vector3();t.face.getWorldPosition(v);const d=v.sub(camera.position).normalize();rangeX=Math.atan2(d.x,-d.z);rangeY=Math.asin(d.y);}};
 race=initRace({levels,brief,begin,title,show:showScreen,setMode:m=>{mode=m},state:()=>({player,checkpoints,stage,zones,obstacles}),
-  clearKeys:()=>{keys={};edges={};joy={x:0,y:0,on:false,src:''};},person,label,world,animate:animatePerson,
+  clearKeys:()=>{keys={};edges={};joy={x:0,y:0,on:false,src:''};},person,label,world,animate:animatePerson,applyLoadout:A.applyLoadout,
   vector:(x,y,z)=>new THREE.Vector3(x,y,z),laneAt,say,vo,startAudio,audioContext:()=>sound,muted:()=>muted,
   raceGraphics:enabled=>{renderer.shadowMap.enabled=!enabled;renderer.setPixelRatio(enabled?1:Math.min(devicePixelRatio,1.5));}});
 war=initWar({world,scene,camera,lights,renderer,canvas:$('c'),box,label,clearWorld,title,tone,

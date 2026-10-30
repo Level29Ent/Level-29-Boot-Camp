@@ -14,3 +14,9 @@ Level 29 Boot Camp game
 - The camera follows the visible soldier over their right shoulder and pulls forward around cover. Shots converge on the centre reticle; the cloud service still decides movement, hits, damage, respawns and match rewards.
 
 This is a static ES-module application; no build step or package install is required to deploy. The browser loads Three.js 0.160.0 using the import map in `index.html`. Live profile and match verification requires a cloud player account; no preview test account is provided.
+
+## Ranks and avatar kits
+- **Ranks & Avatar Kits** previews the 10-rank XP ladder and four kits without signing in. Ranks use the existing progression: Recruit at 0 XP through Command at 9,000 XP, with 1,000 XP between ranks. Cloud-awarded XP determines your rank; training scores in local storage do not grant ranks.
+- Purchase/equip the existing Recruit, Bronze Operator, Arctic Ghost and Gold Battalion cosmetics in **Command & Rewards → Armory**. Existing server IDs/prices are unchanged. Rigs and shoulder bands appear on the character, not just the nameplate. Rank patches use supplied cloud XP. These visuals do not change collision, damage or team helmet colors.
+- Your signed-in kit appears on your soldier in races, campaign recruit stages and third-person War. Other players' kits/ranks render when room state supplies `equipped`/`xp`; absent XP does not imply a fabricated rank. Live cross-client propagation requires testing with the external room service.
+- A global high-score leaderboard is **not implemented**: this repository has no authoritative score database or global-ranking API. Completing it requires the source/access for the external profile/match service, an agreed authoritative score metric, and a public-score endpoint that returns only safe fields (display name, score, rank and cosmetic ID), never private recovery codes. Browser-local training scores must not be trusted for global awards.

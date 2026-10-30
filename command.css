@@ -35,3 +35,6 @@
 }
 
 .remember-choice{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.5;color:var(--khaki);margin:16px 0}.remember-choice input[type=checkbox]{width:20px;min-height:20px;height:20px;flex:none;margin:0;accent-color:var(--gold)}#profileSaveStatus{color:var(--gold)}
+
+#rankLadder{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:18px 0 28px}.rank-step{display:flex;align-items:center;gap:14px;border:1px solid var(--border);padding:12px}.rank-step>b{font:900 28px var(--font-display);color:var(--gold)}.rank-step span{font-size:18px}.rank-step small{display:block;color:var(--khaki);font-size:13px;margin-top:4px}.current-rank{border-color:var(--gold);background:#30351c}.avatar-preview{display:block;width:100%;height:200px;background:radial-gradient(ellipse,#35452d,#10170e);border:1px solid var(--border);margin-bottom:12px}.order-card>strong{color:var(--gold);margin-top:12px}
+@media(max-width:700px){#rankLadder{grid-template-columns:1fr}.avatar-preview{height:180px}}

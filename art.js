@@ -1,5 +1,6 @@
 // Level 29 Boot Camp — art kit: textured characters, sky, terrain, props, per-level dressing.
 import * as THREE from 'three';
+import {cosmeticFor,rankProgress} from './rules.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* ---------- seeded random ---------- */
@@ -485,3 +486,37 @@ export function water(parent, w, l, x, y, z) {
   m.rotation.x = -Math.PI / 2; m.position.set(x, y, z); m.receiveShadow = true; parent.add(m); animated.water = m; return m;
 }
 export function placeBuilt(parent, build, x, z, ry) { const b = new Builder(); build(b); const g = b.geometry(); g.rotateY(ry); g.translate(x, 0, z); const m = new THREE.Mesh(g, vMat); m.castShadow = m.receiveShadow = true; parent.add(m); return m; }
+
+// Wearables use the existing server-owned cosmetic IDs. They never change
+// collision, weapon stats or team helmet colors. Chevrons use server XP only.
+export function applyLoadout(model,equipped='recruit',xp){
+  const u=model.userData;
+  if(u.loadout){
+    for(const part of u.loadout)part.traverse(o=>{if(o.geometry)o.geometry.dispose();});
+    for(const part of u.loadout)part.parent?.remove(part);
+  }
+  u.loadout=[];
+  const item=cosmeticFor(equipped);u.equipped=item.id;
+  if(u.variant!=='recruit')return;
+  const add=(builder,parent)=>{const mesh=builder.mesh(parent);u.loadout.push(mesh);};
+  if(item.id!=='recruit'){
+    const b=new Builder();
+    b.box(.54,.42,.075,'#28332d',0,1.47,-.195).box(.54,.42,.075,'#28332d',0,1.47,.195);
+    for(const side of [-1,1]){
+      b.box(.13,.32,.04,item.color,side*.18,1.48,-.25).box(.13,.32,.04,item.color,side*.18,1.48,.25);
+      b.box(.08,.08,.46,item.color,side*.19,1.68,0);
+    }
+    add(b,u.body);
+    for(const i of [0,2])add(new Builder().box(.17,.08,.18,item.color,0,-.15,0),u.limbs[i]);
+  }
+  if(Number.isFinite(xp)){
+    const rank=rankProgress(xp),b=new Builder();
+    b.box(.24,.28,.035,'#1b241b',0,1.47,.3);
+    const stripes=1+rank.index%5;
+    for(let i=0;i<stripes;i++){
+      const y=1.57-i*.045,color=rank.index>=5?'#ffc72c':'#d9e2c8';
+      b.box(.105,.025,.025,color,-.04,y,.328,0,0,.4).box(.105,.025,.025,color,.04,y,.328,0,0,-.4);
+    }
+    add(b,u.body);
+  }
+}

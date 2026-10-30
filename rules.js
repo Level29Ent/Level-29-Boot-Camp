@@ -26,10 +26,10 @@ export function dailyChallenges(date=dayKey()){
   return CHALLENGES.filter((_,i)=>i%2===d);
 }
 export const COSMETICS=[
-  {id:'recruit',name:'Recruit',desc:'Standard issue identification.',price:0,color:'#f0ddaa'},
-  {id:'bronze',name:'Bronze Operator',desc:'Bronze field title and nameplate.',price:250,color:'#edb67d'},
-  {id:'arctic',name:'Arctic Ghost',desc:'Ice-blue title and nameplate.',price:600,color:'#8bdbff'},
-  {id:'elite',name:'Gold Battalion',desc:'Gold title and nameplate.',price:1500,color:'#ffc72c'}
+  {id:'recruit',name:'Recruit',desc:'Standard issue uniform. No cosmetic armor.',price:0,color:'#f0ddaa'},
+  {id:'bronze',name:'Bronze Operator',desc:'Bronze chest rig, shoulder bands and field nameplate.',price:250,color:'#edb67d'},
+  {id:'arctic',name:'Arctic Ghost',desc:'Ice-blue chest rig, shoulder bands and field nameplate.',price:600,color:'#8bdbff'},
+  {id:'elite',name:'Gold Battalion',desc:'Gold chest rig, shoulder bands and field nameplate.',price:1500,color:'#ffc72c'}
 ];
 // Cover and collision layout is shared by renderer and authoritative simulation.
 export const WAR_COVER=[
@@ -42,4 +42,11 @@ export const WAR_COVER=[
 export const WAR_DURATION=180;
 export const WAR_TARGET=30;
 export const RANKS=['Recruit','Private','Lance Corporal','Corporal','Sergeant','Staff Sergeant','Gunnery Sergeant','Master Sergeant','Sergeant Major','Command'];
-export function rankFor(xp){return RANKS[Math.min(RANKS.length-1,Math.floor(xp/1000))];}
+export function rankProgress(xp=0){
+  const total=Number.isFinite(xp)?Math.max(0,Math.floor(xp)):0;
+  const index=Math.min(RANKS.length-1,Math.floor(total/1000)),max=index===RANKS.length-1;
+  return {index,name:RANKS[index],xp:total,floor:index*1000,next:max?null:RANKS[index+1],
+    remaining:max?0:(index+1)*1000-total,percent:max?100:(total%1000)/10};
+}
+export function rankFor(xp){return rankProgress(xp).name;}
+export function cosmeticFor(id){return COSMETICS.find(item=>item.id===id)||COSMETICS[0];}

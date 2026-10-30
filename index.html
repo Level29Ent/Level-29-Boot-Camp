@@ -70,10 +70,25 @@
         <button class="btn primary" id="btnWar">5v5 War</button>
         <button class="btn" id="btnRace">60-Second Races</button>
         <button class="btn" id="btnCommand">Command & Rewards</button>
+        <button class="btn" id="btnService">Ranks & Avatar Kits</button>
         <button class="btn" id="btnStart">Start Training</button>
         <button class="btn" id="btnSelect">Training Schedule</button>
         <button class="btn" id="btnControls">Controls</button>
       </div>
+    </div>
+  </section>
+
+  <section id="service" class="screen hidden">
+    <div class="sheet command-sheet">
+      <div class="brief-phase">LEVEL 29 / RANKS & AVATAR KITS</div>
+      <h2 class="sheet-title">EARN YOUR STRIPES.</h2>
+      <p class="brief-text">Rise through 10 ranks with cloud-awarded XP from races and War. Each 1,000 XP earns the next rank. Cosmetic kits change your appearance, never your combat stats.</p>
+      <p id="serviceProgress" class="race-fine" role="status"></p>
+      <h3 class="command-subhead">RANK LADDER</h3><div id="rankLadder"></div>
+      <h3 class="command-subhead">WEAR YOUR ACHIEVEMENTS</h3>
+      <p class="race-fine">Spend Field Cash in the Armory, then equip your kit. Chest rigs, shoulder bands and back rank patches appear on your soldier. Team helmets stay unchanged.</p>
+      <div id="serviceLoadouts" class="order-grid"></div>
+      <div class="command-bottom"><button id="serviceManage" class="btn primary">Manage avatar / sign in</button><button id="serviceBack" class="btn">Back to base</button></div>
     </div>
   </section>
 
@@ -251,7 +266,7 @@
     <div class="sheet command-sheet">
       <div class="command-header"><div><div class="brief-phase">LEVEL 29 / PLAYER DOSSIER</div><h2 class="sheet-title">COMMAND CENTER</h2></div><div class="command-wallet"><strong id="cashBalance">0</strong><span>FIELD CASH / FC</span></div></div>
       <div class="command-identity"><span id="profileName">Recruit</span><span id="profileRank">Recruit</span><span id="profileXp">0 XP</span></div>
-      <div id="profileMetrics"></div>
+      <div id="profileMetrics"></div><p id="rankProgressText" class="race-fine"></p><div class="order-progress"><i id="rankProgressBar"></i></div>
       <div class="command-tabs" role="tablist" aria-label="Command center sections"><button role="tab" aria-selected="true" data-command-tab="orders">Daily orders</button><button role="tab" aria-selected="false" data-command-tab="accomplishments">Accomplishments</button><button role="tab" aria-selected="false" data-command-tab="armory">Armory</button><button role="tab" aria-selected="false" data-command-tab="profile">Profile & history</button></div>
       <p id="commandStatus" role="status" aria-live="polite"></p>
       <div data-command-panel="orders">

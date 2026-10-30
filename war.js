@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as A from './art.js';
 import {cloud} from './cloud.js';
 import {thirdPersonView} from './war-view.js';
-import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS} from './rules.js';
+import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS,rankFor} from './rules.js';
 import {FieldAudio} from './race-audio.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -159,8 +159,10 @@ export function initWar(api){
     for(const p of w.room.players){
       const model=A.makePerson(api.world,p.x,p.z,'recruit',{skin:p.slot%4,pose:'aim',cover:false});
       A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');A.makeRifle(model.userData.body);
-      const cosmetic=COSMETICS.find(c=>c.id===p.equipped),color=cosmetic?.id!=='recruit'?cosmetic?.color:p.team==='blue'?'#8bd9ff':'#ff9576';
-      const tag=api.label(p.name+(p.bot?' · AI':''),0,2.9,0,color||'#fff',2);
+      const identity=p.id===w.room.me?cloud.profile:p;
+      A.applyLoadout(model,identity?.equipped,identity?.xp);
+      const cosmetic=COSMETICS.find(c=>c.id===identity?.equipped),color=cosmetic?.id!=='recruit'?cosmetic?.color:p.team==='blue'?'#8bd9ff':'#ff9576';
+      const tag=api.label(p.name+(p.bot?' · AI':Number.isFinite(identity?.xp)?' / '+rankFor(identity.xp):''),0,2.9,0,color||'#fff',2);
       api.world.remove(tag);model.add(tag);models.set(p.id,model);
       if(p.id===w.room.me)tag.visible=false;
     }

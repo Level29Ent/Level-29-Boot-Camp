@@ -60,7 +60,7 @@ export function stylePreview(style){
     <ellipse cx="90" cy="208" rx="54" ry="7" fill="#0b100a"/>
     <path d="M62 126h24v70H60zM94 126h24l2 70H94z" fill="${mascot?base:'#647354'}"/>
     <path d="M55 76h70v57H55zM35 76h20v65H35zM125 76h20v65h-20z" fill="${garment?base:'#647354'}"/>
-    ${kind==='hoodie'?`<path d="M60 78Q53 30 90 28q37 2 30 50l-11-16H71z" fill="${accent}"/><rect x="70" y="109" width="40" height="17" rx="7" fill="${accent}"/><path d="M80 77v26M100 77v26" stroke="#eee9d6" stroke-width="3"/>`:''}
+    ${kind==='hoodie'?`<path d="M61 79q0-21 29-21t29 21l-11 5H72z" fill="${accent}"/><rect x="70" y="109" width="40" height="17" rx="7" fill="${accent}"/><path d="M80 77v26M100 77v26" stroke="#eee9d6" stroke-width="3"/>`:''}
     <rect x="73" y="32" width="34" height="39" rx="9" fill="#b88a70"/>
     <path d="M73 40q0-24 17-24t17 24z" fill="#443528"/>${headwear}
     ${mascot?`<ellipse cx="90" cy="40" rx="34" ry="32" fill="${base}"/>${kind==='bear'?`<circle cx="65" cy="13" r="12" fill="${base}"/><circle cx="115" cy="13" r="12" fill="${base}"/>`:`<path d="M59 20L58-6l24 20M98 14l24-20-1 28" fill="${base}"/>`}<ellipse cx="90" cy="51" rx="21" ry="16" fill="${accent}"/><circle cx="78" cy="36" r="4" fill="#171d17"/><circle cx="102" cy="36" r="4" fill="#171d17"/><ellipse cx="90" cy="47" rx="6" ry="4" fill="#171d17"/><ellipse cx="90" cy="103" rx="24" ry="26" fill="${accent}"/>`:''}

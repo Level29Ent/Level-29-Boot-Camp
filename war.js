@@ -162,7 +162,7 @@ export function initWar(api){
       const localStyle=p.id===w.room.me?styleFor(selectedStyle()):null;
       if(!localStyle||localStyle.pattern.kind==='shirt')A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');
       // Team identifiers stay visible even when a hat or mascot replaces the helmet.
-      for(const i of [0,2])new A.Builder().box(.185,.065,.19,p.team==='blue'?'#3a9fdf':'#e75e4e',0,-.25,0).mesh(model.userData.limbs[i]);
+      for(const i of [0,2])new A.Builder().box(.235,.065,.245,p.team==='blue'?'#3a9fdf':'#e75e4e',0,-.25,0).mesh(model.userData.limbs[i]);
       A.makeRifle(model.userData.body);
       const identity=p.id===w.room.me?cloud.profile:p;
       A.applyLoadout(model,identity?.equipped,identity?.xp,p.id===w.room.me?selectedStyle():null);

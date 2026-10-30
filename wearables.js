@@ -51,15 +51,18 @@ export function addWearables(model,style){
     rounded(body,base,0,1.4,0,.57,.57,.36,.08);
     // Upper sleeves are attached to upper arms; long sleeves to forearms too.
     for(const i of [0,2]){
-      const arm=model.userData.limbs[i];ball(arm,base,0,-.13,0,.105,.23,.11);
-      if(kind!=='shirt')ball(model.userData.fore[i===0?0:1],base,0,-.1,0,.09,.22,.095);
+      const arm=model.userData.limbs[i];rounded(arm,base,0,-.1,0,.2,.32,.215,.045);
+      if(kind!=='shirt')rounded(model.userData.fore[i===0?0:1],base,0,-.12,0,.155,.29,.16,.035);
       rounded(arm,accent,0,-.24,-.005,.17,.045,.18,.015);
     }
     if(plush){
       ball(body,accent,0,1.4,-.21,.21,.25,.04);
+      rounded(body,base,0,1.02,0,.5,.23,.33,.045);
       for(const i of [1,3]){
-        ball(model.userData.limbs[i],base,0,-.22,0,.12,.26,.14);
-        ball(model.userData.shin[i===1?0:1],base,0,-.15,0,.115,.23,.13);
+        rounded(model.userData.limbs[i],base,0,-.21,0,.24,.49,.27,.045);
+        const shin=model.userData.shin[i===1?0:1];
+        rounded(shin,base,0,-.15,0,.23,.38,.26,.04);
+        rounded(shin,base,0,-.4,-.06,.26,.23,.42,.06);
       }
       for(const fore of model.userData.fore)ball(fore,base,0,-.29,-.02,.115,.12,.12);
     }
@@ -100,9 +103,9 @@ export function addWearables(model,style){
     rounded(body,accent,-.14,1.53,-.205,.12,.12,.012,.02);
     rounded(body,accent,0,1.15,-.19,.49,.025,.012,.008);
   }else if(kind==='hoodie'){
-    torso();ball(body,base,0,1.84,.085,.265,.28,.22);
-    // Open face: a padded U-shaped hood rim rather than a solid head sphere.
-    shape(body,new THREE.TorusGeometry(.225,.055,10,28,Math.PI*1.45),accent,0,1.98,-.08,1,1.22,1,0,0,-.72);
+    torso();ball(body,base,0,1.65,.16,.245,.14,.18);
+    // Resting hood drapes behind the collar, leaving the face unobstructed.
+    shape(body,new THREE.TorusGeometry(.2,.045,10,24,Math.PI),accent,0,1.72,.015,1,1,1,Math.PI/2);
     rounded(body,accent,0,1.27,-.217,.33,.14,.025,.045);
     for(const side of [-1,1])shape(body,new THREE.CylinderGeometry(.006,.006,.24,6),accent,side*.075,1.58,-.22);
     shape(body,new THREE.CylinderGeometry(.08,.08,.05,20),accent,0,1.14,0,3,1,2.3);

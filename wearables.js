@@ -74,14 +74,19 @@ export function addWearables(model,style){
     // Curved tapered cloth lobes: gold piping remains visible around each point.
     function lobe(points,color,radius){
       const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
-      for(let i=0;i<14;i++){
-        const a=curve.getPoint(i/14),b=curve.getPoint((i+1)/14),delta=b.clone().sub(a);
-        const bottom=radius*(1-i/14),top=radius*(1-(i+1)/14)+.005;
-        const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),delta.clone().normalize());
-        const rot=new THREE.Euler().setFromQuaternion(q),mid=a.clone().add(b).multiplyScalar(.5);
-        shape(body,new THREE.CylinderGeometry(top+.012,bottom+.012,delta.length()+.007,12),gold,mid.x,mid.y,mid.z,1,1,1,rot.x,rot.y,rot.z);
-        shape(body,new THREE.CylinderGeometry(top,bottom,delta.length()+.01,12),color,mid.x,mid.y,mid.z-.018,1,1,1,rot.x,rot.y,rot.z);
+      const segments=28,radial=12,g=new THREE.TubeGeometry(curve,segments,radius,radial,false);
+      const pos=g.getAttribute('position'),frames=curve.computeFrenetFrames(segments,false),seams=[[],[]];
+      for(let i=0;i<=segments;i++){
+        const t=i/segments,center=curve.getPointAt(t),taper=1-t*.97;
+        for(let j=0;j<=radial;j++){
+          const index=i*(radial+1)+j;
+          const point=new THREE.Vector3().fromBufferAttribute(pos,index).sub(center).multiplyScalar(taper).add(center);
+          pos.setXYZ(index,point.x,point.y,point.z);
+        }
+        for(let side=0;side<2;side++)seams[side].push(center.clone().addScaledVector(frames.normals[i],radius*taper*(side?1:-1)));
       }
+      g.computeVertexNormals();shape(body,g,color,0,0,0);
+      for(const seam of seams)shape(body,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seam),segments,.006,6,false),gold,0,0,0);
       const tip=curve.getPoint(1);ball(body,gold,tip.x,tip.y,tip.z-.015,.052,.052,.052,'Velvet');
     }
     ball(body,skin,0,2.02,0,.275,.3,.255);

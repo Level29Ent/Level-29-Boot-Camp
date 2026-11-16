@@ -65,12 +65,12 @@ export function initMout(api){
     if(api.mode()==='playing'){unlock();api.clearKeys();api.setMode('moutPause');api.show('moutPause');}
     else if(api.mode()==='moutPause'){lastClock=clock();api.clearKeys();api.setMode('playing');api.show(null);}
   };
-  api.canvas.addEventListener('pointerdown',e=>{
-    if(!m.active||state.ended||api.mode()!=='playing'||e.pointerType!=='mouse'||e.button!==0)return;
+  api.canvas.addEventListener('mousedown',e=>{
+    if(!m.active||state.ended||api.mode()!=='playing'||e.button!==0)return;
     heldFire=true;
     if(document.pointerLockElement!==api.canvas)try{api.canvas.requestPointerLock?.()?.catch?.(()=>{});}catch{/* Drag look is available in embedded webviews. */}
   });
-  window.addEventListener('pointerup',()=>{heldFire=false;});window.addEventListener('blur',()=>{heldFire=false;});
+  window.addEventListener('mouseup',e=>{if(e.button===0)heldFire=false;});window.addEventListener('pointercancel',()=>{heldFire=false;});window.addEventListener('blur',()=>{heldFire=false;});
   document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==api.canvas){heldFire=false;if(m.active)api.clearKeys();}});
   m.pointerMove=e=>{
     if(!m.active)return false;

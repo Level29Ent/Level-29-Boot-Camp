@@ -67,3 +67,10 @@ Then test two independent players in co-op: the lowest connected team slot may i
 
 ## Applying the reliability audit
 After merging/pulling the reliability patch, redeploy the existing function with the same authenticated CLI command above (no database reset/migration). Verify all-human Crucible: one teammate at supply delivery, two at extraction; disconnected/dead helpers must not count. In War, confirm movements are not applied before request arrival, bots stay on their next route waypoint rather than drifting past, and leave/re-enter requests do not reopen a closed mode. Old room route-cache shapes are automatically recomputed. These hosted checks remain required; the assistant tested deterministic/local fixtures, not this remote project.
+
+## Deploying disconnected-player / intel fixes
+The edge-case audit changes function code/shared imports, not the schema. From your own authenticated updated checkout, redeploy `bootcamp-command` with the existing CLI command above. Do not reset the database or send keys to an assistant.
+
+In two real browser profiles/devices, check: an explicitly leaving or >5-second silent client stops contesting zones/escort, stops receiving support, disappears from active targeting and drops carried intel where they left. Other clients must keep polling for the presence timeout to be evaluated. In a lobby, a silent host transfers leadership to the lowest-slot connected human; stale slots can be reclaimed before deployment, but an active host cannot be usurped. PvP needs a connected opponent. Reconnect while membership remains and verify controls return without stale held shots/jumps. In Intel, kill a carrier and wait through respawn: the item must stay at the death position (unless another live participant picks it up), never teleport home. Server respawn must discard old commands; no extra rewards or migrations are part of this patch.
+
+These are required hosted acceptance checks, not remotely completed by the assistant. The 500ms held-input timeout remains distinct from the 5s presence timeout.

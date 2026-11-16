@@ -1,7 +1,7 @@
 import {botPlan,setSquadOrder,objectiveActivity} from '../../../squad-tactics.js';
 import {COSMETICS,ACHIEVEMENTS,dailyChallenges,dayKey,WAR_COVER} from '../../../rules.js';
 import {AVATAR_STYLES} from '../../../avatar-styles.js';
-import {createObjective,stepObjective,useRole,OPERATIONS,ROLES,CRUCIBLE_HURDLES} from '../../../operations.js';
+import {createObjective,stepObjective,useRole,OPERATIONS,ROLES,CRUCIBLE_HURDLES,activeParticipant,dropIntel} from '../../../operations.js';
 export const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 export const finite=(value,min,max,fallback=0)=>Number.isFinite(value)?Math.max(min,Math.min(max,value)):fallback;
 export function callsign(value){if(typeof value!=='string'||!value.trim()||value.trim().length>18)fail('Enter a callsign between 1 and 18 characters.');return value.trim();}
@@ -56,6 +56,7 @@ export function joinRoom(room,profile,kind,role='rifleman'){
   if(room.kind!==kind)fail('That room belongs to another game mode.');
   const old=room.players.find(p=>p.id===profile.id);if(old){old.connected=true;return;}
   if(room.startsAt!==null)fail('This match has already started.');
+  room.players=room.players.filter(p=>p.connected!==false);
   const max=room.kind==='race'?6:room.mode==='pve'?5:10;if(room.players.length>=max)fail('Room is full.');
   let slot=0;
   if(room.kind==='war'&&room.mode==='pvp'){
@@ -66,10 +67,21 @@ export function joinRoom(room,profile,kind,role='rifleman'){
   room.players.push(participant({...profile,role:Object.hasOwn(ROLES,role)?role:'rifleman'},slot));
 }
 export function startRoom(room,id,time){
+  refreshPresence(room,time);
   if(id!==room.host)fail('Only the host may deploy.',403);if(room.startsAt!==null)return;
-  room.startsAt=time+3000;room.lastTick=time;
+  if(room.mode==='pvp'&&!room.players.some(p=>p.team==='red'&&!p.bot&&p.connected!==false))fail('Invite a connected opposing player before deploying.');
+  room.players=room.players.filter(p=>p.connected!==false);
+  room.startsAt=time+3000;room.lastTick=time;for(const p of room.players)p.lastSeen=time;
   if(room.kind==='race')for(const p of room.players){p.x=0;p.y=0;p.z=7;}
   if(room.kind==='war')for(let i=0;i<10;i++)if(!room.players.some(p=>p.slot===i))room.players.push(participant({id:'bot-'+i,name:'AI '+(i<5?'Alpha ':'Bravo ')+(i%5+1)},i,true));
+}
+// Presence is distinct from the short held-input timeout. Legacy room rows
+// without lastSeen receive a baseline once rather than becoming immortal.
+export function refreshPresence(room,time){
+  for(const p of room.players){if(p.bot)continue;p.lastSeen??=room.createdAt??time;
+    if(time-p.lastSeen>5000){p.connected=false;p.input={};dropIntel(room.objective,p);}
+  }
+  if(room.startsAt===null&&!room.players.some(p=>p.id===room.host&&p.connected!==false))room.host=room.players.filter(p=>!p.bot&&p.connected!==false).sort((a,b)=>a.slot-b.slot)[0]?.id||null;
 }
 const blocked=(x,z,r=.5)=>Math.abs(x)>22||Math.abs(z)>32||WAR_COVER.some(c=>Math.abs(x-c.x)<c.w/2+r&&Math.abs(z-c.z)<c.d/2+r);
 function move(room,p,dx,dz,speed,dt){
@@ -94,13 +106,13 @@ function shoot(room,p,yaw,pitch,time){
   const origin={x:p.x,y:p.y+(p.crouch?1.15:1.65),z:p.z},direction={x:-Math.sin(yaw)*Math.cos(pitch),y:Math.sin(pitch),z:-Math.cos(yaw)*Math.cos(pitch)};
   let distance=60,target=null;
   for(const c of WAR_COVER)distance=Math.min(distance,rayBox(origin,direction,{x:c.x-c.w/2,y:0,z:c.z-c.d/2},{x:c.x+c.w/2,y:c.h,z:c.z+c.d/2}));
-  for(const q of room.players){if(q.id===p.id||q.hp<=0)continue;
+  for(const q of room.players){if(q.id===p.id||!activeParticipant(q))continue;
     const d=rayBox(origin,direction,{x:q.x-.4,y:q.y,z:q.z-.4},{x:q.x+.4,y:q.y+(q.crouch?1.3:2),z:q.z+.4});
     if(d<distance){distance=d;target=q;}
   }
   const hit=target&&target.team!==p.team;
   room.events.push({id:++room.eventId,type:'shot',at:time,from:p.id,team:p.team,...origin,tx:origin.x+direction.x*distance,ty:origin.y+direction.y*distance,tz:origin.z+direction.z*distance,hit:!!hit});
-  if(hit){p.hits++;target.hp=Math.max(0,target.hp-25);if(!target.hp){p.kills++;target.deaths++;target.respawnAt=time+3000;if(room.objective.id==='elimination')room.scores[p.team]++;
+  if(hit){p.hits++;target.hp=Math.max(0,target.hp-25);if(!target.hp){dropIntel(room.objective,target);p.kills++;target.deaths++;target.respawnAt=time+3000;if(room.objective.id==='elimination')room.scores[p.team]++;
     room.events.push({id:++room.eventId,type:'kill',at:time,team:p.team,killer:p.name,victim:target.name});}}
 }
 // Bounded BFS routes around cover; no mesh/assets or client positions are trusted.
@@ -117,7 +129,7 @@ function botDirection(p,goal){
 }
 export function acceptInput(room,id,input,time){
   const p=room.players.find(q=>q.id===id&&!q.bot);if(!p)fail('Join this room first.',403);
-  p.connected=true;
+  p.connected=true;p.lastSeen=Math.max(p.lastSeen||0,time);
   if(room.kind!=='war'||room.endedAt||!room.startsAt||!Number.isSafeInteger(input.seq)||input.seq<=p.seq)return;
   p.seq=input.seq;p.inputAt=time;
   if(input.order)setSquadOrder(room,p,input.order,time);
@@ -125,6 +137,7 @@ export function acceptInput(room,id,input,time){
     fire:input.fire===true,jump:input.jump===true,reload:input.reload===true,crouch:input.crouch===true,sprint:input.sprint===true,ability:input.ability===true};
 }
 export function tickRoom(room,time){
+  refreshPresence(room,time);
   if(room.startsAt===null||room.endedAt||time<=room.lastTick)return;
   const end=room.startsAt+(room.kind==='war'?180:60)*1000;
   if(room.kind==='race'){if(time>=end)room.endedAt=end;return;}
@@ -133,7 +146,9 @@ export function tickRoom(room,time){
   while(cursor<Math.min(time,end)){
     const dt=Math.min(.1,(Math.min(time,end)-cursor)/1000);cursor+=dt*1000;
     for(const p of room.players){
-      if(p.hp<=0){if(cursor<p.respawnAt)continue;p.hp=100;p.ammo=30;p.reloadAt=0;p.x=(p.slot%5-2)*3;p.z=p.team==='blue'?27:-27;p.y=0;p.velocity=0;}
+      if(!activeParticipant(p))dropIntel(room.objective,p);
+      if(p.connected===false)continue;
+      if(p.hp<=0){if(cursor<p.respawnAt)continue;p.hp=100;p.ammo=30;p.reloadAt=0;p.x=(p.slot%5-2)*3;p.z=p.team==='blue'?27:-27;p.y=0;p.velocity=0;p.input={};delete p.route;delete p.memory;p.shotAt=0;}
       if(p.reloadAt&&cursor>=p.reloadAt){p.reloadAt=0;p.ammo=30;}
       if(p.bot){
         const plan=botPlan(room,p,cursor);p.behavior=plan.behavior;
@@ -165,7 +180,7 @@ export function publicRoom(room,id,time){
   const player=room.players.find(p=>p.id===id&&!p.bot);if(!player)fail('Join this room first.',403);
   return {nextSeq:player.seq+1,code:room.code,kind:room.kind,mode:room.mode,host:room.host,me:id,course:room.course,startsAt:room.startsAt,endedAt:room.endedAt,
     elapsed:room.startsAt===null?null:(Math.min(time,room.endedAt||time)-room.startsAt)/1000,serverNow:time,orders:room.orders,objective:room.objective,scores:room.scores,events:room.events,
-    players:room.players.map(p=>{const {input,inputAt,shotAt,active,route,routeAt,velocity,seq,memory,...safe}=p;return {...safe,...(p.id!==id?{revealUntil:undefined}:{})};})};
+    players:room.players.map(p=>{const {input,inputAt,shotAt,active,route,routeAt,velocity,seq,memory,lastSeen,...safe}=p;return {...safe,...(p.id!==id?{revealUntil:undefined}:{})};})};
 }
 export function settle(p,room,time){
   if(!room.endedAt||room.kind!=='war')return;

@@ -21,3 +21,9 @@ The agent's deployment checks have returned `Account is blocked.` Account status
 
 ## Browser-local progress
 Complete/fail/retry each route and refresh. Urban results must not overwrite container bests or grant Clean Breach. Verify denied storage gives honest messages and does not prevent play. Never clear site data to “fix” a bug without backing up what the user needs; it removes local records and may remove remembered login credentials.
+
+## Mixed-input and presence regression acceptance
+- Hold right mouse to aim, then hold/release left to fire, in War and both MOUT routes. Releasing left must stop shots and keep right aim. Test the reverse order too; releasing right must not stop left-held fire. Keyboard K plus mouse fire must remain independent.
+- Hold a controller action, unplug it, and confirm movement/fire stops while any independently held keyboard action continues. Disable touch controls while the stick/FIRE is held: no stuck movement/shooting. Verify actual pointer-cancel on the target mobile OS.
+- After deploying the updated function, verify explicit leave, 5-second silent-client presence expiry, lobby host transfer, stale-slot reclaim, PvP opponent requirement and intel drop-before-respawn. Keep the other client polling: there is no autonomous simulation/presence worker.
+- Local automated browser checks and injected gamepads cannot replace these physical-device and hosted tests. Use the committed input/chord scripts to reproduce logic failures without credentials first.

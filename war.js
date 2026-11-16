@@ -115,7 +115,7 @@ export function initWar(api){
         const p=members[i];return `<div class="war-slot"><span>${p?esc(p.name)+(p.id===w.room.me?' (you)':''):'AI reinforcement'}</span><small>${p?p.id===w.room.host?'HOST':p.connected?'READY':'OFFLINE':'BOT'}</small></div>`;
       }).join('');
     }
-    const host=w.room.me===w.room.host,valid=w.room.mode!=='pvp'||w.room.players.some(p=>p.team==='red');
+    const host=w.room.me===w.room.host,valid=w.room.mode!=='pvp'||w.room.players.some(p=>p.team==='red'&&p.connected!==false);
     $('warStart').disabled=!host||!valid;
     $('warStart').textContent=!host?'Waiting for host':!valid?'Invite an opposing player':'Deploy 5v5';
   }
@@ -248,11 +248,12 @@ export function initWar(api){
   $('warAgain').onclick=w.open;
   $('warResultCommand').onclick=()=>{w.exit();api.openCommand();};
   $('warResultTitleBack').onclick=()=>{w.exit();api.title();};
-  api.canvas.addEventListener('pointerdown',e=>{if(w.active&&api.mode()==='playing'&&e.pointerType==='mouse'&&e.button===0){fireMouse=true;pendingFire=true;
+  api.canvas.addEventListener('mousedown',e=>{if(w.active&&api.mode()==='playing'&&e.button===0){fireMouse=true;pendingFire=true;
     if(document.pointerLockElement!==api.canvas){
       try{api.canvas.requestPointerLock?.()?.catch?.(()=>{});}catch{/* Drag-to-look remains available. */}
     }}});
-  window.addEventListener('pointerup',()=>{fireMouse=false;});
+  window.addEventListener('mouseup',e=>{if(e.button===0)fireMouse=false;});
+  window.addEventListener('pointercancel',()=>{fireMouse=false;});
   document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==api.canvas){fireMouse=false;api.clearKeys();}});
   w.pointerMove=e=>{
     if(document.pointerLockElement!==api.canvas)return false;
@@ -304,7 +305,7 @@ export function initWar(api){
         A.animatePerson(model,active&&Math.hypot(dx,dz)>.1,performance.now()*.008);
         continue;
       }
-      model.visible=p.hp>0;model.position.lerp(new THREE.Vector3(p.x,p.y,p.z),Math.min(1,dt*11));
+      model.visible=p.hp>0&&p.connected!==false;model.position.lerp(new THREE.Vector3(p.x,p.y,p.z),Math.min(1,dt*11));
       model.rotation.y=p.yaw;model.userData.pose=p.crouch?'kneelaim':'aim';A.animatePerson(model,!!p.moving,performance.now()*.008);
       model.children.at(-1)?.lookAt(api.camera.position);
     }
@@ -360,7 +361,7 @@ export function initWar(api){
     ctx.fillStyle='#768063';
     for(const c of WAR_COVER){const [x,z]=pos(c);ctx.fillRect(x-c.w/48*s/2,z-c.d/70*s/2,c.w/48*s,c.d/70*s);}
     if(objective){const [x,y]=pos(objective);ctx.strokeStyle='#ffc72c';ctx.strokeRect(x-5,y-5,10,10);}
-    for(const p of room.players){if(p.hp<=0)continue;
+    for(const p of room.players){if(p.hp<=0||p.connected===false)continue;
       if(objective&&p.team!==own.team&&!(own.revealUntil>now())&&Math.hypot(p.x-own.x,p.z-own.z)>12)continue;const [x,y]=pos(p);
       ctx.fillStyle=p.id===room.me?'#ffc72c':p.team===own.team?'#83dbff':'#ff8566';ctx.beginPath();ctx.arc(x,y,p.id===room.me?4:2.8,0,Math.PI*2);ctx.fill();}
   }

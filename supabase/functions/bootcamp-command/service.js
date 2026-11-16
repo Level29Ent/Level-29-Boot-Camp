@@ -1,4 +1,5 @@
-import {fail,newProfile,profileAction,createRoom,joinRoom,startRoom,tickRoom,acceptInput,publicRoom,settle,finite} from './domain.js';
+import {fail,newProfile,profileAction,createRoom,joinRoom,startRoom,tickRoom,acceptInput,publicRoom,settle,finite,refreshPresence} from './domain.js';
+import {dropIntel} from '../../../operations.js';
 export async function digest(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(bytes)].map(n=>n.toString(16).padStart(2,'0')).join('');}
 const randomHex=length=>[...crypto.getRandomValues(new Uint8Array(length))].map(n=>n.toString(16).padStart(2,'0')).join('');
 export class Database {
@@ -60,9 +61,11 @@ export function createService(db,{now=()=>Date.now()}={}){
     let completed=null;
     const result=await db.change('bootcamp_rooms','code',code,(room,row)=>{
       if(Date.parse(row.expires_at)<=time)fail('Room expired. Create another room.',410);
+      refreshPresence(room,time);
       if(action==='room_join'||action==='war_find')joinRoom(room,profile,action==='war_find'?'war':payload.expectedKind,payload.role);
       let own=room.players.find(p=>p.id===id&&!p.bot);if(!own)fail('Join this room first.',403);
       tickRoom(room,time);
+      if(action!=='room_leave'){own.lastSeen=Math.max(own.lastSeen||0,time);own.connected=true;refreshPresence(room,time);}
       own.name=profile.name;own.equipped=profile.equipped;own.xp=profile.xp;own.style=profile.style;
       if(action==='room_start')startRoom(room,id,time);
       if(action==='war_input'){
@@ -81,7 +84,7 @@ export function createService(db,{now=()=>Date.now()}={}){
       }
       if(action==='room_leave'){
         if(!room.startsAt){room.players=room.players.filter(p=>p.id!==id);if(room.host===id)room.host=room.players[0]?.id||null;}
-        else{own.connected=false;own.input={};}
+        else{own.connected=false;own.input={};dropIntel(room.objective,own);}
         completed=room.endedAt?room:null;return {ok:true};
       }
       completed=room.endedAt?room:null;return publicRoom(room,id,time);

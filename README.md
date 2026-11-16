@@ -12,7 +12,7 @@ Level 29 Boot Camp game
 Cloud registration/restore lives under the expandable **Optional cloud saves, rewards & online friends** panel. Network/unreadable-response errors explain the available local-play path. A pending or failed optional registration does not disable local play or take the player away from gameplay when it completes. Remembered-profile auto-reconnect is silent if it fails, rather than forcing a login screen during play.
 
 ## Saving progress
-- Create a profile once in **Player login / profile**, or restore your existing recovery code. Leave **Remember this device** enabled only on a trusted browser. The next visit restores that profile automatically.
+- Create a profile once in **Player login / profile**, or restore your existing recovery code. Leave **Remember this device** enabled only on a trusted browser. The next visit restores that profile automatically. 
 - Cash, XP and match stats remain authoritative in the external cloud service. No profile/reward server code is included here.
 - Keep a private recovery code to move between devices or recover after clearing browser data. Remembered sign-in codes are stored in this site's local storage; anyone using the browser can access that profile. **Forget this device** removes the saved sign-in, not the cloud profile or current session.
 - Completed campaign training levels, scores and completion times auto-save in this browser only (shared by users of this browser, not synced between profiles/devices). Mid-level checkpoints are not saved. Browser storage failures are reported rather than presented as successful saves.

@@ -1,0 +1,139 @@
+/* Final layout layer: HUD regions reserve space rather than sharing offsets. */
+.utility-dock{position:absolute;inset:auto max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));z-index:95;display:flex;justify-content:center;gap:8px;pointer-events:none}
+.utility-dock .global-button,body .utility-dock #audioBtn,body .utility-dock #joyBtn,body .utility-dock #fieldSettingsButton{position:static;transform:none;inset:auto;pointer-events:auto;min-width:0;min-height:38px;height:auto;max-width:40%;padding:8px 12px;font-size:11px;line-height:1.2}
+#warHud{--hud-touch:0px}
+body:has(#touchControls.enabled) #warHud{--hud-touch:126px}
+#warHud .war-top{top:max(10px,env(safe-area-inset-top));padding:8px 16px}
+.war-header-row{position:absolute;top:94px;left:12px;right:12px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+#warHud #warModeBadge,#warHud #warNetwork,#warHud .war-hud-buttons{position:static;transform:none;inset:auto;max-width:none;margin:0}
+#warHud #warModeBadge{font-size:11px}#warHud #warNetwork{max-width:35%;overflow-wrap:anywhere}
+.war-mission-row{position:absolute;top:147px;left:210px;right:210px;display:grid;gap:4px}
+#warHud #practiceHudLabel,#warHud #operationStatus{position:static;transform:none;inset:auto;width:auto;max-width:none;margin:0;font-size:12px}
+.war-tactical-column{position:absolute;top:150px;left:12px;width:180px;display:grid;gap:10px}
+#warHud #warRadar,#warHud #warAllyStatus{position:static;inset:auto;width:100%;max-width:none;transform:none;box-sizing:border-box}
+#warHud #warRadar{width:132px;height:154px}#warHud #warAllyStatus{font-size:10px}
+#warHud #warKillfeed{top:154px;right:12px;max-width:185px;font-size:11px}
+.war-bottom-band{position:absolute;bottom:calc(56px + var(--hud-touch));left:50%;transform:translateX(-50%);width:min(450px,calc(100% - 24px));display:grid;gap:6px}
+#warHud .war-vitals{position:static;inset:auto;transform:none;max-width:none;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:12px}
+#warHud .war-vitals strong{font-size:23px}#warHud .war-vitals small{font-size:9px}
+#warHud #warPersonalScore{border:0;padding:0;max-width:100px;font-size:10px}
+.war-command-row{display:flex;gap:6px;align-items:stretch}
+#warHud #squadCommands{position:static;inset:auto;max-width:none;margin:0;padding:0;flex:3;border:0;background:none}
+#warHud #squadCommands small{font-size:9px;margin:0 0 4px;line-height:1.1}
+#warHud #squadCommands div{display:flex;flex-wrap:nowrap;gap:6px}
+#warHud #squadCommands button{flex:1;min-width:0;font-size:11px;padding:6px;white-space:nowrap;min-height:40px}
+#warHud #roleAbility{position:static;inset:auto;max-width:126px;flex:1;font-size:10px;padding:6px;min-height:40px;align-self:flex-end}
+#warHud #warControlsHint{display:none}
+.score-tactical{margin-top:20px;border-top:1px solid #a8945f;padding-top:12px;font-size:13px;line-height:1.7;color:#d6e4ce}
+#moutHud .mout-top{width:min(760px,calc(100% - 20px));top:max(10px,env(safe-area-inset-top))}
+#moutHud .mout-mission{top:104px;left:12px;right:auto;max-width:min(460px,calc(100% - 220px))}
+#moutHud .mout-nav{top:104px;right:12px;bottom:auto;width:170px}
+#moutHud .mout-hint{bottom:64px}
+#touchControls .actions,body.war-active #touchControls .actions,body.mout-active #touchControls .actions{bottom:calc(56px + env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right));gap:6px;grid-template-columns:repeat(3,48px)}
+#touchControls .actions button,body.war-active #touchControls .actions button,body.mout-active #touchControls .actions button{width:48px;height:48px}
+#touchControls .joy,body.war-active #touchControls .joy,body.mout-active #touchControls .joy{width:120px;height:120px;left:max(12px,env(safe-area-inset-left));bottom:calc(56px + env(safe-area-inset-bottom))}
+#touchControls .joy-knob,body.war-active #touchControls .joy-knob,body.mout-active #touchControls .joy-knob{width:54px;height:54px;margin:-27px 0 0 -27px}
+@media(max-width:900px),(max-height:600px){
+ #warHud .war-top{left:12px;right:12px;width:auto;transform:none;grid-template-columns:1fr 90px 1fr;padding:5px 10px;height:58px}
+ #warHud .war-team-score strong{font-size:30px}#warHud .war-team-score span{font-size:11px}#warHud .war-clock>strong{font-size:22px}#warHud .war-clock>small{font-size:9px}
+ .war-header-row{top:76px;height:40px}#warHud #warModeBadge{max-width:45%;text-align:left;letter-spacing:.02em;font-size:10px}
+ #warHud #warNetwork,#warHud #practiceHudLabel,.war-tactical-column,#warHud #warKillfeed{display:none}
+ #warHud .war-hud-buttons button{padding:6px 10px;min-height:36px;font-size:11px}
+ .war-mission-row{top:124px;left:12px;right:12px}
+ #warHud #operationStatus{font-size:11px;line-height:1.3;padding:6px}
+ .war-bottom-band{width:min(390px,calc(100% - 20px));bottom:calc(56px + var(--hud-touch));gap:5px}
+ #warHud .war-vitals{padding:6px 9px}#warHud .war-vitals strong{font-size:20px}#warHud #warPersonalScore{font-size:9px}
+ #warHud #squadCommands small{display:none}#warHud #squadCommands button{font-size:10px;min-height:38px;padding:5px}
+ #warHud #roleAbility{font-size:9px;max-width:90px;min-height:38px}
+ #moutHud .mout-top{padding:7px 10px;gap:8px;height:64px}#moutHud .mout-top strong{font-size:21px}#moutHud .mout-top small{font-size:9px}#moutHud .mout-top button{min-height:40px;font-size:10px}
+ #moutHud .mout-mission{top:84px;left:10px;right:10px;max-width:none;font-size:11px;padding:7px;line-height:1.3}
+ #moutHud .mout-mission p{margin:5px 0}#moutHud .mout-mission small{display:none}
+ #moutHud .mout-nav{top:166px;right:10px;bottom:auto;width:112px;padding:5px}
+ #moutHud .mout-nav p{font-size:10px;line-height:1.2}#moutHud .mout-hint{display:none}
+ .utility-dock{gap:6px}.utility-dock .global-button,body .utility-dock #audioBtn,body .utility-dock #joyBtn,body .utility-dock #fieldSettingsButton{padding:7px 10px;font-size:10px;min-height:36px}
+}
+@media(max-width:360px){
+ #touchControls .actions,body.war-active #touchControls .actions,body.mout-active #touchControls .actions{grid-template-columns:repeat(3,44px);gap:5px;right:8px}
+ #touchControls .actions button,body.war-active #touchControls .actions button,body.mout-active #touchControls .actions button{width:44px;height:44px;font-size:13px}
+ #touchControls .joy,body.war-active #touchControls .joy,body.mout-active #touchControls .joy{width:104px;height:104px;left:8px}
+ #moutHud .mout-top{padding:6px;gap:5px}#moutHud .mout-top strong{font-size:17px}#moutHud .mout-top small{font-size:8px}
+ #moutHud .mout-nav{width:96px}#moutHud .mout-nav p{font-size:9px}
+}
+@media(max-height:500px) and (min-width:500px){
+ body:has(#touchControls.enabled) #warHud{--hud-touch:0px}
+ .war-bottom-band{bottom:56px;width:min(380px,calc(100% - 340px))}
+ #warHud .war-top{left:170px;right:170px} .war-header-row{top:10px;left:12px;right:12px;align-items:flex-start;pointer-events:none}#warHud #warModeBadge{max-width:145px}
+ #warHud .war-hud-buttons{pointer-events:auto} .war-mission-row{top:78px;left:170px;right:170px}
+ #warHud .war-vitals{gap:6px}#warHud #warPersonalScore{max-width:80px}#warHud #squadCommands button{font-size:9px}
+ #moutHud .mout-top{left:50%;width:min(540px,calc(100% - 250px));height:56px}
+ #moutHud .mout-mission{top:78px;left:12px;right:145px;max-width:480px}
+ #moutHud .mout-nav{top:78px;right:12px;width:112px}
+}
+/* Dialogs are intentionally stacked, but their actions must stay reachable. */
+.sheet{max-height:calc(100dvh - 24px);overflow-y:auto}
+/* Campaign and races use the same non-overlapping title/timer/mission bands. */
+#hud .hud-tl{top:12px;left:12px;right:152px;width:auto;max-width:none;height:62px;padding:7px 10px}
+#hud .hud-level{font-size:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hud .hud-tr{top:12px;right:12px;width:128px;min-width:0;height:62px;padding:7px 9px;display:grid;grid-template-columns:1fr 1fr;column-gap:8px;text-align:center}
+#hudTimerLabel{grid-column:1;grid-row:1}#hudTimer{grid-column:1;grid-row:2}#hudScoreLabel{grid-column:2;grid-row:1}#hudScore{grid-column:2;grid-row:2}
+#hud .hud-label{font-size:8px;letter-spacing:.03em}#hud .hud-value,#hud .hud-value.big{font-size:22px;margin:0}
+#hud .hud-tc{top:86px;left:12px;right:12px;transform:none;max-width:none;width:auto;align-items:center}
+#hud .objective{font-size:14px;line-height:1.35;padding:7px 12px;max-width:640px}
+#hud .hud-bl{bottom:64px;left:12px}body:has(#touchControls.enabled.playing) #hud .hud-bl{bottom:192px}
+#hud .hud-br{bottom:64px;right:12px}#hud #debug{display:none}
+body .utility-dock #touchPause{display:none;position:static;transform:none;inset:auto;height:auto;min-height:36px;max-width:25%;padding:7px 10px;font-size:10px;pointer-events:auto}
+body:has(#hud:not(.hidden)):has(#touchControls.enabled) .utility-dock #touchPause{display:block}
+body.war-active .utility-dock #touchPause,body.mout-active .utility-dock #touchPause{display:none!important}
+@media(max-width:900px),(max-height:600px){
+ #hud .hud-level{font-size:17px}#hud .hud-phase{font-size:9px;letter-spacing:.04em}
+ #hud .hud-tr{width:112px}#hud .hud-tl{right:136px}
+ #hud .hud-tc{top:84px}#hud .objective{font-size:12px;padding:6px 9px}
+ #hud .bar{width:min(170px,48vw)}#hud .bar-wrap span{width:68px;font-size:10px}
+ #hud .hud-br{display:none}
+ #raceBoard{top:146px;left:12px;width:150px;padding:7px}
+ #raceBoard .race-standing{padding:4px 0;font-size:11px;grid-template-columns:12px 1fr 32px;gap:3px}
+ #raceBoard .race-standing small{display:none}
+ #raceBoard .race-standing:nth-child(n+4):not(.is-you){display:none}
+ #raceBoard .race-board-head,#raceBoard .race-board-head span{font-size:10px;line-height:1.2}
+ .utility-dock{gap:4px}body .utility-dock #audioBtn,body .utility-dock #joyBtn,body .utility-dock #fieldSettingsButton,body .utility-dock #touchPause{letter-spacing:.03em;padding:7px 8px;font-size:9px}
+}
+@media(max-height:500px) and (min-width:500px){
+ #hud .hud-tl{left:170px;right:310px;height:56px}#hud .hud-tr{right:170px;height:56px}
+ #hud .hud-level{font-size:15px}#hud .hud-tc{left:170px;right:170px;top:80px}
+ #raceBoard{top:12px;left:12px;width:144px;max-height:188px;overflow:hidden}
+ #raceBoard .race-standing:not(.is-you){display:none}
+ #hud .hud-bl,body:has(#touchControls.enabled.playing) #hud .hud-bl{bottom:64px;left:50%;transform:translateX(-50%)}
+}
+/* Old :has(#hud) ID rules must not translate flex-docked controls. */
+.utility-dock > button{position:static!important;inset:auto!important;transform:none!important;flex:0 1 auto}
+@media(min-width:901px) and (min-height:601px){#raceBoard{top:136px;max-height:calc(100dvh - 340px);overflow:hidden}}
+@media(min-width:901px) and (min-height:601px){body.race-active #hud .hud-bl{left:50%;transform:translateX(-50%)}}
+.screen:not(.title-screen):not(.mout-survey-screen){padding:12px 12px 64px}
+.screen:not(.title-screen):not(.mout-survey-screen) > .sheet{max-height:calc(100dvh - 88px)}
+#title .title-content{padding-bottom:76px}
+@media(max-height:500px) and (min-width:500px){
+ #moutHud .mout-nav canvas{display:none}#moutHud .mout-nav{width:124px}#moutHud .mout-nav p{margin:0}
+}
+@media(max-height:360px) and (min-width:500px){
+ #warHud .war-team-score span{display:none}.war-bottom-band{width:calc(100% - 300px)}
+ #warHud .war-vitals strong{font-size:17px}#warHud .war-vitals small{font-size:8px}#warHud #warPersonalScore{font-size:8px;max-width:60px}
+ #warHud #squadCommands button{font-size:8px;padding:4px}#warHud #roleAbility{font-size:8px;max-width:65px}
+ #warHud .war-top{left:154px;right:154px}.war-mission-row{left:154px;right:154px}#warHud #operationStatus{font-size:9px}
+ #warHud .war-hud-buttons button{font-size:10px;padding:6px}
+ #touchControls .joy,body.war-active #touchControls .joy,body.mout-active #touchControls .joy{width:104px;height:104px}
+}
+@media(max-height:360px) and (min-width:500px){.war-bottom-band{left:132px;right:176px;transform:none;width:auto}}
+@media(max-height:360px) and (min-width:500px){
+ #hud .hud-bl,body:has(#touchControls.enabled.playing) #hud .hud-bl{left:132px;right:176px;transform:none}
+ #hud .bar{width:110px}#hud .bar-wrap span{width:62px;font-size:9px}
+}
+body.race-active #touchControls .joy{width:120px;height:120px;left:12px;bottom:calc(56px + env(safe-area-inset-bottom))}
+body.race-active #touchControls .actions{grid-template-columns:repeat(3,48px);gap:6px;right:12px;bottom:calc(56px + env(safe-area-inset-bottom))}
+body.race-active #touchControls .actions button{width:48px;height:48px}
+@media(max-width:360px){body.race-active #touchControls .joy{width:104px;height:104px;left:8px}body.race-active #touchControls .actions{grid-template-columns:repeat(3,44px);gap:5px;right:8px}body.race-active #touchControls .actions button{width:44px;height:44px}}
+@media(max-height:360px) and (min-width:500px){body.race-active #touchControls .joy{width:104px;height:104px}}
+@media(max-width:360px) and (min-height:501px){body:has(#touchControls.enabled) #warHud{--hud-touch:108px}}
+@media(max-height:360px) and (min-width:500px){
+ #warHud .war-vitals{height:44px;line-height:1;padding:4px 7px}#warHud .war-vitals strong{line-height:1}#warHud .war-vitals small{line-height:1.1}#warHud #warPersonalScore{line-height:1.2}
+}
+#warScores{bottom:64px;max-height:calc(100dvh - 80px);overflow:auto}

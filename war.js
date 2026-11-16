@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {OPERATIONS,ROLES,drillChallenges,CRUCIBLE_HURDLES} from './operations.js';
+import {saveBadges,readRecords} from './field-records.js';
 import * as A from './art.js';
 import {cloud} from './cloud.js';
 import {createWarPractice} from './war-practice.js';
@@ -14,6 +16,7 @@ export function initWar(api){
   const w={active:false,room:null};let practice=null;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
   let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
   let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
+  let objectiveMarker=null,pendingAbility=false;
   let pendingJump=false,pendingReload=false,pendingFire=false,lastRtt=0;
   const audio=new FieldAudio();audio.volume=.22;
   const message=s=>{$('warStatus').textContent=s;};
@@ -40,6 +43,7 @@ export function initWar(api){
     w.exit();ended=false;api.stopRace();api.setMode('warMenu');api.show('warMenu');
     message('Local 5v5 bot practice starts instantly without a cloud account. Online co-op and PvP require the cloud service.');
     $('warJoinCode').value='';
+    const badges=readRecords().badges||[];$('localBadges').textContent='Local Drill Instructor badges: '+badges.length+' / 3 earned in this browser.';
   };
   $('btnWar').onclick=w.open;
   $('warBack').onclick=()=>{w.exit();api.title();};
@@ -51,8 +55,8 @@ export function initWar(api){
     finally{button.disabled=false;}
   }
   $('warBots').onclick=()=>{
-    const name=cleanCallsign($('racerName').value);w.exit();
-    practice=createWarPractice(name,{equipped:cloud.profile?.equipped,xp:cloud.profile?.xp});
+    const name=cleanCallsign($('racerName').value);w.exit();pendingAbility=false;lastInput={};
+    practice=createWarPractice(name,{equipped:cloud.profile?.equipped,xp:cloud.profile?.xp,operation:$('localOperation').value,role:$('localRole').value});
     apply(practice.state);poll();
   };
   $('warCloudBots').onclick=()=>prepare($('warCloudBots'),async()=>{
@@ -104,7 +108,7 @@ export function initWar(api){
   async function pollOnce(){
     if(busy||!w.room||ended)return;busy=true;const code=w.room.code;
     try{
-      const payload={...lastInput,seq:++seq,code};pendingJump=pendingReload=pendingFire=false;
+      const payload={...lastInput,seq:++seq,code};pendingJump=pendingReload=pendingFire=pendingAbility=false;
       const state=await request(w.active?'war_input':'room_state',payload);
       if(w.room?.code!==code)return;
       apply(state);
@@ -139,11 +143,20 @@ export function initWar(api){
   function build(){
     ended=false;w.active=true;seq=0;lastEvents=new Set();models=new Map();tracers=[];
     api.graphics(true);api.clearWorld();api.show(null);api.setMode('playing');document.body.classList.add('war-active');
-    $('warHud').classList.remove('hidden');api.setLook(me()?.team==='red'?Math.PI:0,.18);api.clearKeys();
+    $('warHud').classList.remove('hidden');$('roleAbility').classList.toggle('hidden',!practice);api.setLook(me()?.team==='red'?Math.PI:0,.18);api.clearKeys();
     const useButton=$('touchControls')?.querySelector('[data-key="e"]');if(useButton)useButton.innerHTML='E<br><small>RELOAD</small>';
     const crouchButton=$('touchControls')?.querySelector('[data-key="c"]');if(crouchButton)crouchButton.innerHTML='C<br><small>CROUCH</small>';
     A.applyEnv('combat',api.scene,api.lights,api.renderer);api.scene.fog=new THREE.Fog('#b8ae8e',65,160);
     api.box(58,.3,80,'#a99b70',0,-.18,0);
+    objectiveMarker=null;
+    if(practice&&w.room.objective.id!=='elimination'){
+      const o=w.room.objective;
+      objectiveMarker=new THREE.Group();
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(2,.12,8,32),new THREE.MeshBasicMaterial({color:'#ffc72c'}));
+      ring.rotation.x=-Math.PI/2;objectiveMarker.add(ring);
+      if(o.id==='escort'){const truck=new A.Builder();truck.box(1.8,1.3,3.2,'#596940',0,.9,0).box(1.8,1.6,1.2,'#728354',0,1.1,-1.7);truck.mesh(objectiveMarker);}
+      api.world.add(objectiveMarker);
+    }
     const b=new A.Builder();
     for(const c of WAR_COVER){
       const color=c.h>3?'#5b6655':c.h<2?'#9b8b61':'#656b4b';
@@ -161,18 +174,23 @@ export function initWar(api){
       A.tower(b,side*29,side*20,6);
       A.sandbags(b,side*18,side*24,6,0,2);
     }
+    if(practice&&w.room.objective.id==='crucible'){for(const h of CRUCIBLE_HURDLES)b.box(h.w,h.h,h.d,'#c3a853',h.x,h.h/2,h.z);}
     b.mesh(api.world);
     api.label('ALPHA',0,4,32,'#8bd9ff',5);
     const red=api.label('BRAVO',0,4,-32,'#ff9576',5);red.rotation.y=Math.PI;
     for(const p of w.room.players){
       const model=A.makePerson(api.world,p.x,p.z,'recruit',{skin:p.slot%4,pose:'aim',cover:false});
-      const localStyle=p.id===w.room.me?styleFor(selectedStyle()):null;
+      const localStyle=styleFor(p.id===w.room.me?selectedStyle():p.style);
       if(!localStyle||localStyle.pattern.kind==='shirt')A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');
       // Team identifiers stay visible even when a hat or mascot replaces the helmet.
       for(const i of [0,2])new A.Builder().box(.235,.065,.245,p.team==='blue'?'#3a9fdf':'#e75e4e',0,-.25,0).mesh(model.userData.limbs[i]);
       A.makeRifle(model.userData.body);
+      if(practice&&p.id===w.room.me&&w.room.objective.id==='crucible'){
+        const crate=new A.Builder().box(.8,.6,.6,'#69804b',0,1,-.7).box(.84,.08,.64,'#c2ab64',0,1.3,-.7).mesh(model.userData.body);
+        crate.visible=false;model.userData.supplyCrate=crate;
+      }
       const identity=p.id===w.room.me?cloud.profile:p;
-      A.applyLoadout(model,identity?.equipped,identity?.xp,p.id===w.room.me?selectedStyle():null);
+      A.applyLoadout(model,identity?.equipped,identity?.xp,p.id===w.room.me?selectedStyle():styleFor(p.style)?.id);
       const cosmetic=COSMETICS.find(c=>c.id===identity?.equipped),color=cosmetic?.id!=='recruit'?cosmetic?.color:p.team==='blue'?'#8bd9ff':'#ff9576';
       const tag=api.label(p.name+(p.bot?' · AI':Number.isFinite(identity?.xp)?' / '+rankFor(identity.xp):''),0,2.9,0,color||'#fff',2);
       api.world.remove(tag);model.add(tag);models.set(p.id,model);
@@ -184,6 +202,7 @@ export function initWar(api){
     audio.mode=$('warAudio').value;audio.start(api.audioContext());
     renderUi();
   }
+  $('roleAbility').onclick=()=>{if(practice&&api.mode()==='playing')pendingAbility=true;};
   $('warAudio').onchange=()=>{audio.mode=$('warAudio').value;};
   $('warLeave').onclick=()=>{
     api.show('warExit');api.setMode('warExit');api.clearKeys();fireMouse=false;
@@ -230,16 +249,19 @@ export function initWar(api){
     if(input.edges[' '])pendingJump=true;
     if(input.edges.r||input.edges.e)pendingReload=true;
     if(input.edges.j)pendingFire=true;
+    if(input.edges.f)pendingAbility=true;
     if(active){
-      const speed=input.keys.c?2.5:input.keys.shift?6.7:4.5;
+      const speed=(input.keys.c?2.5:input.keys.shift?6.7:4.5)*(practice&&w.room.objective.id==='crucible'&&w.room.objective.stage===1?.72:1);
       const x=visual.x+worldX*speed*dt,z=visual.z+worldZ*speed*dt;
-      if(!collides(x,visual.z))visual.x=x;
-      if(!collides(visual.x,z))visual.z=z;
+      const blocked=(x,z)=>collides(x,z)||(practice&&w.room.objective.id==='crucible'&&CRUCIBLE_HURDLES.some(h=>own.y<h.h&&Math.abs(x-h.x)<h.w/2+.35&&Math.abs(z-h.z)<h.d/2+.35));
+      if(!blocked(x,visual.z))visual.x=x;
+      if(!blocked(visual.x,z))visual.z=z;
       visual.y=THREE.MathUtils.lerp(visual.y,own.y,Math.min(1,dt*12));
     }
     for(const p of w.room.players){
       const model=models.get(p.id);if(!model)continue;
       if(p.id===w.room.me){
+        if(model.userData.supplyCrate)model.userData.supplyCrate.visible=w.room.objective.stage===1;
         model.visible=own.hp>0;model.position.copy(visual);model.rotation.y=yaw;
         model.userData.pose=input.keys.c?'kneelaim':'aim';
         A.animatePerson(model,active&&Math.hypot(dx,dz)>.1,performance.now()*.008);
@@ -255,7 +277,7 @@ export function initWar(api){
     const ownModel=models.get(w.room.me);if(ownModel)ownModel.visible=own.hp>0&&!view.hidePlayer;
     lastInput={dx:active?worldX:0,dz:active?worldZ:0,yaw:view.yaw,pitch:view.pitch,
       fire:active&&!!(input.keys.j||pendingFire||fireMouse),jump:active&&pendingJump,
-      crouch:active&&!!input.keys.c,sprint:active&&!!input.keys.shift,reload:active&&!!(input.keys.r||pendingReload)};
+      ...(practice?{ability:active&&pendingAbility}:{}),crouch:active&&!!input.keys.c,sprint:active&&!!input.keys.shift,reload:active&&!!(input.keys.r||pendingReload)};
     if(input.edges[' ']||input.edges.r||input.edges.e)pollOnce();
     for(const t of tracers)t.age+=dt;
     tracers=tracers.filter(t=>{if(t.age>.14){api.world.remove(t.line);t.line.geometry.dispose();t.line.material.dispose();return false;}return true;});
@@ -265,9 +287,14 @@ export function initWar(api){
   };
   function renderUi(){
     const room=w.room,own=me();if(!own)return;
+    const objective=practice?room.objective:null;
+    $('warWinRule').textContent=objective?OPERATIONS[objective.id].name.toUpperCase():'FIRST TO 30';
+    $('operationStatus').textContent=objective?objective.text+(objective.hold?' · '+objective.hold.toFixed(1)+'/5s':''):'';
+    if(objectiveMarker){objectiveMarker.position.set(objective.x,.15,objective.z);}
+    if(practice){const wait=Math.max(0,Math.ceil(((own.abilityAt||0)-now())/1000));$('roleAbility').textContent=ROLES[own.role].name+' · '+(wait?wait+'s':'F / ABILITY');$('roleAbility').disabled=wait>0||own.hp<=0;$('roleAbility').title=ROLES[own.role].ability;}
     const t=elapsed(),remaining=Math.ceil(Math.max(0,WAR_DURATION-Math.max(0,t)));
     $('warTimer').textContent=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
-    $('blueScore').textContent=room.scores.blue;$('redScore').textContent=room.scores.red;
+    $('blueScore').textContent=Math.floor(room.scores.blue);$('redScore').textContent=Math.floor(room.scores.red);
     $('warHealth').textContent=own.hp;$('warAmmo').textContent=own.reloadAt?'RELOADING':own.ammo+' / 30';
     $('warHealthBar').style.width=own.hp+'%';
     $('warPersonalScore').textContent=own.kills+' ELIMS / '+own.deaths+' DEATHS';
@@ -283,7 +310,9 @@ export function initWar(api){
     const pos=p=>[(p.x+24)/48*s,(p.z+35)/70*s];
     ctx.fillStyle='#768063';
     for(const c of WAR_COVER){const [x,z]=pos(c);ctx.fillRect(x-c.w/48*s/2,z-c.d/70*s/2,c.w/48*s,c.d/70*s);}
-    for(const p of room.players){if(p.hp<=0)continue;const [x,y]=pos(p);
+    if(objective){const [x,y]=pos(objective);ctx.strokeStyle='#ffc72c';ctx.strokeRect(x-5,y-5,10,10);}
+    for(const p of room.players){if(p.hp<=0)continue;
+      if(practice&&p.team!==own.team&&!(own.revealUntil>now())&&Math.hypot(p.x-own.x,p.z-own.z)>12)continue;const [x,y]=pos(p);
       ctx.fillStyle=p.id===room.me?'#ffc72c':p.team===own.team?'#83dbff':'#ff8566';ctx.beginPath();ctx.arc(x,y,p.id===room.me?4:2.8,0,Math.PI*2);ctx.fill();}
   }
   async function end(){
@@ -296,7 +325,14 @@ export function initWar(api){
     $('warResultSummary').textContent='ALPHA '+w.room.scores.blue+' : '+w.room.scores.red+' BRAVO · '+own.kills+' eliminations · '+own.deaths+' deaths';
     $('warResultRoster').innerHTML=w.room.players.slice().sort((a,b)=>b.kills-a.kills).map(p=>
       `<div class="war-result-player ${p.id===w.room.me?'is-you':''}"><span class="${p.team}">${esc(p.name)}${p.bot?' · AI':''}</span><b>${p.kills} / ${p.deaths}</b></div>`).join('');
-    if(practice){$('warRewardText').textContent='Local practice complete. No cloud cash, XP or leaderboard scores awarded.';return;}
+    $('warDrillReport').textContent='';
+    if(practice){
+      const o=w.room.objective,success=o.id==='elimination'||o.id==='zones'||o.id==='intel'?ownScore>other:o.won;
+      $('warResultHeading').textContent=success?'MISSION COMPLETE':'MISSION INCOMPLETE';
+      $('warResultSummary').textContent=OPERATIONS[o.id].name+' · Alpha '+Math.floor(ownScore)+' / Bravo '+Math.floor(other)+' · '+own.kills+' eliminations · '+own.deaths+' deaths';
+      const challenges=drillChallenges(own,true),saved=saveBadges(challenges.filter(c=>c.done).map(c=>c.id));
+      $('warDrillReport').textContent='DRILL INSTRUCTOR: '+challenges.map(c=>(c.done?'✓ ':'— ')+c.name).join(' · ')+(saved?' · Badges saved in this browser.':' · Storage unavailable; badges not saved.');
+      $('warRewardText').textContent='Local AI-squad practice complete. No cloud cash, XP or leaderboard scores awarded.';return;}
     $('warRewardText').textContent='Syncing match earnings…';
     try{
       const p=await cloud.refresh(),reward=p.claims.find(c=>c.source==='match:'+w.room.code);

@@ -58,3 +58,29 @@ Select **MOUT Shoot House → Deploy into shoot house** for a signed-out, sessio
 - **Scene:** modified/stacked container rooms with side-fed breach openings, tight centre corridor, three-metre upper catwalk, ramp, guardrails, corrugated-metal bump texture, overhead floodlights, one 1024px shadow-casting spotlight and room practicals. Same layout definitions drive collision and visible walls. Shooting is first-person so targets remain aimable inside tight rooms.
 
 The mode owns its HUD, targets, materials and lights; leaving restores rendering state and existing controls. No new dependency, external backend, assets, secret or Vercel configuration is required.
+
+## Field Operations, squad roles and Drill Instructor challenges
+Open **5v5 War**, select a local mission and role, then **Play local 5v5**. All new rules run only in the separate local bot simulation, not in existing cloud rooms. One human leads four AI allies against five AI enemies. Every operation has a three-minute deadline:
+
+- **Squad Crucible:** jump at the gold rally marker, cross two low hurdles while carrying supplies (reduced movement speed), deliver with an AI teammate for five seconds, earn three squad eliminations, then extract with two living AI teammates for five seconds. Supply/extraction holds reset when the required squad leaves the marker.
+- **Capture zone:** earn 60 seconds of uncontested presence. Eliminations alone do not score objective points.
+- **Retrieve intel:** pick up the gold marker and return to your own base three times. A dead carrier drops intel at their position. Either squad can carry it.
+- **Supply escort:** stand near the truck to advance it along a cover-clearing route; nearby enemies stop it. Reach 100% before the deadline.
+- **Team elimination:** the existing first-to-30 rules remain available.
+
+Use **F** or the on-screen **ability button**. Abilities have a 25-second cooldown; no consumables, paid boosts or damage bonuses. Medic restores 35 HP to living allies within six metres. Engineer refills nearby living allies' magazines. Scout reveals distant enemies on radar for eight seconds (normally local radar reveals enemies within 12m). Rifleman instantly reloads their own magazine. Medic/Engineer do not spend cooldown when there is nothing to restore. Ability cooldowns persist through respawns. Controller players can use the existing mouse/touch button; no new controller binding is claimed.
+
+After a full local match, the Drill Instructor reports three optional challenges: finish with no deaths; hit every shot with at least eight shots fired; heal/resupply teammates twice. Earned badges persist in browser storage, separate from cloud cash/XP and existing server achievements. Storage failure is reported. Aborting a match awards no badges.
+
+## Personal bests and ghost races
+Finish a **local** 60-second race to save the fastest finish and sampled path per course in this browser. Select **Retry this course / race your ghost** in the results. A translucent non-colliding recruit replays your fastest run; the HUD compares progress and shows the best time. The ghost is not a ninth competitor and cannot change standings, scores or cloud rewards. Slower runs and DNFs do not overwrite the fastest run. **Next shuffled race** keeps the existing no-repeat course rotation. Online races do not record ghosts or trust local bests for rewards. Storage denial/corruption does not prevent racing; a failed write is reported in results. Clearing site data removes local records and badges.
+
+## Remaining multiplayer work (not implemented here)
+The external `bootcamp-command` service is referenced by this client but its source/deployment access is not part of this repository. New online objective modes, role validation, co-op Crucible and cross-client free-style synchronization require that backend. Existing online elimination/race requests are unchanged; local mission/role selection is never sent as an unsupported cloud command.
+
+Remote race/War characters can now render a validated optional `style` ID from room state, falling back to existing Armory kits for absent/unknown IDs. This is **receive-side preparation, not working cosmetic synchronization**. A backend follow-up must persist an allowlisted free-style ID (or null), expose only the public style in safe room-player snapshots, and support an authenticated, validated appearance update before the client may send a style choice. It must not expose recovery tokens, award kit ownership, or accept local cash/XP. Use `avatar-styles.js` as the ID catalog. Mid-match appearance changes and cross-client verification also remain server-integration work.
+
+To finish online gameplay, implement authoritative objective timers/progression, collisions, role cooldowns and utility effects in that service; negotiate supported modes explicitly; then test two independent clients for join/reconnect, carrier death, contested objectives, abilities, style propagation and unchanged rewards. Do not simulate peer state by relabeling offline practice as online co-op.
+
+### Checks
+Run `node --test tests/*.cjs tests/*.mjs` (Node 22+ with native ES-module syntax detection). No production dependency or build step was added. Behavioral tests cover contested capture, intel pickup/drop/delivery, escort presence/contest, Crucible phases, all four utilities/cooldowns, challenge requirements, faster-only records, ghost interpolation and denied/corrupt storage.

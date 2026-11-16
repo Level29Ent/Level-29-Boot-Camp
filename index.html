@@ -239,7 +239,7 @@
             <div class="race-label">RANDOM COURSE ROTATION</div>
             <p>All 100 courses shuffled each session. No repeats until all 100 are drawn. The host sets the rotation for friends. Course revealed at the start.</p>
           </div>
-          <button class="btn primary wide" id="raceSolo">Play now vs 7 bots — no login</button><p class="race-fine">Local practice starts immediately. No cloud cash or XP.</p><button class="btn wide" id="raceCloudSolo">Optional cloud race + rewards</button>
+          <button class="btn primary wide" id="raceSolo">Play now vs 7 bots — no login</button><p class="race-fine">Local practice starts immediately. Finish to save a personal best and translucent ghost in this browser, then retry the same course. No cloud cash or XP.</p><button class="btn wide" id="raceCloudSolo">Optional cloud race + rewards</button>
           <p class="race-fine">Joystick, keyboard and gamepad supported. Fastest finish wins; otherwise furthest progress wins. Places 6–8 are disqualified at the buzzer, even if they finish.</p>
         </div>
         <div class="friend-panel">
@@ -267,7 +267,7 @@
     <div class="sheet narrow">
       <div class="brief-phase">AFTER-ACTION REPORT / 60 SECONDS</div>
       <h2 class="sheet-title" id="raceResultTitle">RACE COMPLETE</h2>
-      <p id="raceResultText" class="brief-text"></p><p id="raceRewardText" class="race-fine" role="status"></p><div id="raceResults"></div>
+      <p id="raceResultText" class="brief-text"></p><p id="raceRewardText" class="race-fine" role="status"></p><p id="raceRecordReport" class="race-fine" role="status"></p><button id="raceRetryCourse" class="btn">Retry this course / race your ghost</button><div id="raceResults"></div>
       <div class="menu row"><button class="btn primary" id="raceAgain">Next shuffled race</button><button class="btn" id="raceQuit">Title</button></div>
     </div>
   </section>
@@ -275,7 +275,16 @@
     <div class="sheet war-sheet">
       <div class="brief-phase">LEVEL 29 / TACTICAL FIELD OPERATIONS</div>
       <div class="war-hero"><h2 class="sheet-title">HOLD YOUR GROUND.<br>BACK YOUR SQUAD.</h2><strong>5v5</strong></div>
-      <p class="war-description">Third-person, over-the-shoulder team combat. Two squads, one fortified training ground. First to 30 eliminations, or the highest score after three minutes. Respawns keep you in the fight.</p>
+      <p class="war-description">Third-person, over-the-shoulder team combat. Two squads, one fortified training ground. Team elimination: first to 30, or highest score after three minutes. Local objective missions below use their own victory conditions. Respawns keep you in the fight.</p>
+      <article class="field-operations">
+        <div class="brief-phase">NEW / LOCAL AI-SQUAD OPERATIONS</div>
+        <h3>THE SQUAD CRUCIBLE</h3>
+        <p>Rally jump → carry supplies with your squad → clear the route → extract together. Or try capture, intel and supply escort on the fortified training ground.</p>
+        <div class="operation-options"><label>MISSION<select id="localOperation"><option value="elimination">Team elimination</option><option value="crucible">Squad Crucible</option><option value="zones">Capture zone</option><option value="intel">Retrieve intel</option><option value="escort">Supply escort</option></select></label>
+        <label>ROLE<select id="localRole"><option value="rifleman">Rifleman · instant reload</option><option value="medic">Medic · nearby healing</option><option value="engineer">Engineer · squad resupply</option><option value="scout">Scout · radar reveal</option></select></label></div>
+        <p class="race-fine">These selections apply only to Play local 5v5 below. One human with AI squadmates, not online co-op. Free balanced utility roles: F or the ability button, 25s cooldown. No cash or XP rewards.</p>
+        <p id="localBadges" class="race-fine"></p><details><summary>Drill Instructor challenges</summary><p>Stand Your Ground: finish with zero deaths. No Wasted Rounds: land every shot (minimum eight). Back Your Squad: heal or resupply teammates twice. Badges save only in this browser, independently of cloud achievements.</p></details>
+      </article>
       <div class="war-deployments">
         <article class="war-deployment blue-deployment"><div class="brief-phase">PVBOT / CO-OP</div><h3>YOU VS THE BATTALION</h3><p>Lead Alpha against five AI opponents. Bring up to four friends on your team, or let bots fill your squad.</p><button class="btn primary" id="warBots">Play local 5v5 — no login</button><p class="race-fine">Offline bot practice. No cloud cash or XP.</p><button class="btn" id="warCloudBots">Optional cloud match vs bots</button><button class="btn" id="warCreatePve">Create co-op room</button></article>
         <article class="war-deployment red-deployment"><div class="brief-phase">PVP / TEAM WAR</div><h3>ALPHA VS BRAVO</h3><p>Compete with friends on opposing teams. Up to ten human players. AI reinforcements fill empty slots, five per side.</p><button class="btn primary" id="warCreatePvp">Host private PvP</button><button class="btn" id="warFind">Find public PvP lobby</button></article>
@@ -293,13 +302,13 @@
     <div class="sheet narrow"><div class="brief-phase">LIVE OPERATION</div><h2 class="sheet-title">YOUR SQUAD IS STILL FIGHTING</h2><p class="brief-text">Online matches do not pause. Return to the fight or leave this operation.</p><div class="menu"><button class="btn primary" id="warStay">Back to the fight</button><button class="btn" id="warLeaveConfirm">Leave match</button></div></div>
   </section>
   <section id="warResult" class="screen hidden">
-    <div class="sheet narrow"><div class="brief-phase">5v5 / AFTER-ACTION REPORT</div><h2 class="sheet-title" id="warResultHeading">SQUAD VICTORY</h2><p id="warResultSummary" class="brief-text"></p><p id="warRewardText" class="race-fine" role="status"></p><div id="warResultRoster"></div><div class="menu row"><button id="warAgain" class="btn primary">Redeploy</button><button id="warResultCommand" class="btn">Collect rewards</button><button id="warResultTitleBack" class="btn">Base</button></div></div>
+    <div class="sheet narrow"><div class="brief-phase">5v5 / AFTER-ACTION REPORT</div><h2 class="sheet-title" id="warResultHeading">SQUAD VICTORY</h2><p id="warResultSummary" class="brief-text"></p><p id="warRewardText" class="race-fine" role="status"></p><p id="warDrillReport" class="race-fine"></p><div id="warResultRoster"></div><div class="menu row"><button id="warAgain" class="btn primary">Redeploy</button><button id="warResultCommand" class="btn">Collect rewards</button><button id="warResultTitleBack" class="btn">Base</button></div></div>
   </section>
   <div id="warHud" class="hidden">
-    <div class="war-top"><div class="war-team-score blue"><span>ALPHA</span><strong id="blueScore">0</strong></div><div class="war-clock"><strong id="warTimer">3:00</strong><small>FIRST TO 30</small></div><div class="war-team-score red"><strong id="redScore">0</strong><span>BRAVO</span></div></div>
+    <div class="war-top"><div class="war-team-score blue"><span>ALPHA</span><strong id="blueScore">0</strong></div><div class="war-clock"><strong id="warTimer">3:00</strong><small id="warWinRule">FIRST TO 30</small></div><div class="war-team-score red"><strong id="redScore">0</strong><span>BRAVO</span></div></div>
     <div id="warModeBadge">PVBOT / ALPHA</div><div id="warNetwork" role="status">CLOUD LIVE</div><div class="war-hud-buttons"><button id="warShowScores">Scores</button><button id="warLeave">Exit</button></div>
     <canvas id="warRadar" width="192" height="224" aria-label="Battlefield radar: blue allies, red enemies, gold player"></canvas>
-    <div id="warKillfeed"></div><div id="warReticle"></div>
+    <div id="operationStatus" role="status"></div><button id="roleAbility" class="hidden">F / ABILITY</button><div id="warKillfeed"></div><div id="warReticle"></div>
     <div class="war-vitals"><div><small>HEALTH</small><strong id="warHealth">100</strong><div class="war-hp-track"><i id="warHealthBar"></i></div></div><div><small>RIFLE / AMMO</small><strong id="warAmmo">30 / 30</strong></div><div id="warPersonalScore">0 ELIMS / 0 DEATHS</div></div>
     <div id="warControlsHint">WASD / joystick move · Drag aim<br>J / mouse fire · E / R reload · K zoom<br>Space jump · C crouch · Shift sprint</div>
     <div id="warCountdown" class="hidden">3</div>

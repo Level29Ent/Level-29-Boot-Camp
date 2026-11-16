@@ -1,3 +1,5 @@
+import {styleFor} from './avatar-styles.js';
+import {bestRace,saveRace,ghostAt} from './field-records.js';
 import {createRaceCourses} from './race-courses.js';
 import {createCourseRotation} from './race-rotation.js';
 import {RACE_DURATION,RACE_DISQUALIFIED,rankRaceEntries} from './race-rules.js';
@@ -17,6 +19,7 @@ export function initRace(api){
   let room=null,token='',pollTimer=null,busy=false,pollFailures=0,anchor=0,syncedElapsed=-5;
   let countdown=-3,roundStarted=false,ended=false,models=new Map(),lastDraw=0;
   let soloEpoch=0,pausedAt=0,manual=false;
+  let ghost=null,ghostModel=null,recording=[],recordResult=null,lastSample=-1;
   let serverOffset=0,bestRtt=Infinity;
   const status=(message)=>{$('roomStatus').textContent=message;};
   const name=()=>$('racerName').value.trim().slice(0,18)||'Recruit';
@@ -40,7 +43,9 @@ export function initRace(api){
     if(room&&token)request('/'+room.code+'/leave',{}).catch(()=>{});
     room=null;token='';r.online=false;
   }
+  function disposeGhost(){if(ghostModel)ghostModel.traverse(o=>{if(o.isMesh)o.material.dispose();});ghostModel=null;}
   r.exit=()=>{
+    disposeGhost();
     leave();audio.stop();r.active=false;r.finished=false;useCampaign();
     api.raceGraphics(false);
     $('hudTimerLabel').textContent='TIME REMAINING';$('hudScoreLabel').textContent='SCORE';
@@ -132,6 +137,8 @@ export function initRace(api){
   }
   function poll(){stopPolling();pollTimer=setInterval(pollOnce,250);}
   function start(course){
+    disposeGhost();
+    ghost=r.online?null:bestRace(course);recording=[];lastSample=-1;recordResult=null;ghostModel=null;
     r.active=true;r.finished=false;r.finishTime=null;r.course=course;r.elapsed=0;r.entries=[];ended=false;
     countdown=-3;soloEpoch=performance.now();roundStarted=false;models=new Map();useCourses();
     api.raceGraphics(true);api.brief(course);api.begin();document.body.classList.add('race-active');
@@ -151,12 +158,16 @@ export function initRace(api){
     $('hudKeys').innerHTML='<kbd>Space</kbd> Jump / climb · <kbd>C</kbd> Crawl<br><kbd>Shift</kbd> Sprint · gold rings in order';
     for(const bot of r.bots)modelFor(bot);
     if(r.online)for(const human of room.players)if(human.id!==room.me)modelFor({...human,type:'FRIEND',color:'#79d7ff'});
+    if(ghost){
+      ghostModel=api.person(0,7,'recruit',{cover:true});
+      ghostModel.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.28;o.material.depthWrite=false;}});
+    }
     soloEpoch=performance.now();
   }
   function modelFor(entry){
     if(models.has(entry.id))return models.get(entry.id);
     const model=api.person(entry.id.startsWith('bot')?r.bots.find(b=>b.id===entry.id).lane:1,7,'recruit',{cover:true,skin:models.size%4});
-    api.applyLoadout(model,entry.equipped,entry.xp);
+    api.applyLoadout(model,entry.equipped,entry.xp,styleFor(entry.style)?.id);
     const callsign=entry.name+(Number.isFinite(entry.xp)?' / '+rankFor(entry.xp):'');
     const kit=cosmeticFor(entry.equipped);
     const tag=api.label(entry.type==='BOT'?'AI '+(Number(entry.id.slice(4))+1):callsign,0,2.8,0,kit.id==='recruit'?(entry.color||'#79d7ff'):kit.color,entry.type==='BOT'?.8:1.6);
@@ -222,8 +233,10 @@ export function initRace(api){
     const player=api.state().player;player.position.y=0;player.userData.pose='stand';api.animate(player,false,0,false);
     api.clearKeys();$('hudObjective').textContent='FINISHED · watching the squad until 60 seconds';
     api.say('FINISH! '+r.finishTime.toFixed(2)+'s','good',2.5);
+    if(!r.online){captureSample();recordResult=saveRace(r.course,r.finishTime,recording);}
     if(r.online)pollOnce();
   };
+  function captureSample(){const p=api.state().player;recording.push([r.elapsed,p.position.x,p.position.y,p.position.z,p.rotation.y,progress()]);lastSample=r.elapsed;}
   r.beforeUpdate=dt=>{
     if(!r.active||ended)return true;
     if(r.online)r.elapsed=room.startsAt?(Date.now()+serverOffset-room.startsAt)/1000:syncedElapsed+(performance.now()-anchor)/1000;
@@ -258,6 +271,12 @@ export function initRace(api){
       api.animate(m,!p.finish,r.elapsed*8);
     }
     drawBoard();
+    if(!r.online&&r.elapsed>=0&&!r.finished&&r.elapsed-lastSample>=.1)captureSample();
+    if(ghostModel){
+      const g=ghostAt(ghost.samples,r.elapsed);ghostModel.position.set(g.x,g.y,g.z);ghostModel.rotation.y=g.rotation;
+      api.animate(ghostModel,r.elapsed<ghost.time,r.elapsed*8);
+      $('raceConnection').textContent='PB '+ghost.time.toFixed(2)+'s · '+(progress()>=g.progress?'AHEAD':'BEHIND')+' GHOST';
+    }
     audio.tick(dt,api.muted());
   };
   r.advance=(ms,update)=>{
@@ -295,7 +314,9 @@ export function initRace(api){
     $('raceResultText').textContent=courses[r.course].name+' · '+RACE_DURATION.toFixed(2)+'-second round · You placed '+rank+' of '+list.length+'. Bottom '+RACE_DISQUALIFIED+' disqualified.';
     $('raceResults').innerHTML=list.map((e,i)=>`<div class="result-racer ${e.disqualified?'is-disqualified':''} ${e.type==='YOU'?'is-you':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${escape(e.name)}<small>${e.type} · ${e.disqualified?'DISQUALIFIED':'QUALIFIED'}</small></span><strong>${e.finish!==null?e.finish.toFixed(2)+'s':Math.floor(e.progress*100)+'% / DNF'}</strong></div>`).join('');
     $('raceAgain').textContent='Next shuffled race';
+    $('raceRecordReport').textContent=r.online?'Records and ghosts are local-practice only.':recordResult?(recordResult.saved?(recordResult.best?'NEW PERSONAL BEST · ':'Finish · ')+r.finishTime.toFixed(2)+'s'+(recordResult.delta==null?'': ' · '+(recordResult.delta>0?'+':'')+recordResult.delta.toFixed(2)+'s vs previous PB'):'Storage unavailable · this run was not saved.'):'Finish the course to save a personal best and ghost.';
   }
+  $('raceRetryCourse').onclick=()=>{if(r.online)r.open();else start(r.course);};
   $('raceAgain').onclick=()=>{if(r.online)r.open();else start(nextCourse());};
   $('raceQuit').onclick=()=>{r.exit();api.title();};
   r.isOnline=()=>r.active&&r.online;

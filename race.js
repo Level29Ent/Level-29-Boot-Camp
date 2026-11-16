@@ -140,7 +140,7 @@ export function initRace(api){
     disposeGhost();
     ghost=r.online?null:bestRace(course);recording=[];lastSample=-1;recordResult=null;ghostModel=null;
     r.active=true;r.finished=false;r.finishTime=null;r.course=course;r.elapsed=0;r.entries=[];ended=false;
-    countdown=-3;soloEpoch=performance.now();roundStarted=false;models=new Map();useCourses();
+    countdown=-3;pausedAt=0;soloEpoch=performance.now();roundStarted=false;models=new Map();useCourses();
     api.raceGraphics(true);api.brief(course);api.begin();document.body.classList.add('race-active');
     const humans=r.online?room.players.length:1;
     r.bots=Array.from({length:8-humans},(_,i)=>({
@@ -270,7 +270,7 @@ export function initRace(api){
       m.position.lerp(api.vector(p.x,p.y,p.z),Math.min(1,dt*12));m.rotation.y=p.rotation;
       api.animate(m,!p.finish,r.elapsed*8);
     }
-    drawBoard();
+    lastDraw+=dt;if(lastDraw>=.1||dt===0){drawBoard();lastDraw=0;}
     if(!r.online&&r.elapsed>=0&&!r.finished&&r.elapsed-lastSample>=.1)captureSample();
     if(ghostModel){
       const g=ghostAt(ghost.samples,r.elapsed);ghostModel.position.set(g.x,g.y,g.z);ghostModel.rotation.y=g.rotation;
@@ -312,7 +312,7 @@ export function initRace(api){
     $('raceResultTitle').textContent=own.disqualified?'DISQUALIFIED':rank===1?'MISSION: FIRST PLACE':'QUALIFIED';
     $('raceResultText').textContent=courses[r.course].name+' · '+RACE_DURATION.toFixed(2)+'-second round · You placed '+rank+' of '+list.length+'. Bottom '+RACE_DISQUALIFIED+' disqualified.';
     $('raceResults').innerHTML=list.map((e,i)=>`<div class="result-racer ${e.disqualified?'is-disqualified':''} ${e.type==='YOU'?'is-you':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${escape(e.name)}<small>${e.type} · ${e.disqualified?'DISQUALIFIED':'QUALIFIED'}</small></span><strong>${e.finish!==null?e.finish.toFixed(2)+'s':Math.floor(e.progress*100)+'% / DNF'}</strong></div>`).join('');
-    $('raceAgain').textContent='Next shuffled race';
+    $('raceAgain').textContent='Next shuffled race';$('raceRetryCourse').classList.toggle('hidden',r.online);
     $('raceRecordReport').textContent=r.online?'Records and ghosts are local-practice only.':recordResult?(recordResult.saved?(recordResult.best?'NEW PERSONAL BEST · ':'Finish · ')+r.finishTime.toFixed(2)+'s'+(recordResult.delta==null?'': ' · '+(recordResult.delta>0?'+':'')+recordResult.delta.toFixed(2)+'s vs previous PB'):'Storage unavailable · this run was not saved.'):'Finish the course to save a personal best and ghost.';
   }
   $('raceRetryCourse').onclick=()=>{if(r.online)r.open();else start(r.course);};

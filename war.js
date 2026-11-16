@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {dressField,feedback} from './presentation.js';
 import {OPERATIONS,ROLES,drillChallenges,CRUCIBLE_HURDLES} from './operations.js';
 import {saveBadges,readRecords} from './field-records.js';
 import * as A from './art.js';
@@ -13,7 +14,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const collides=(x,z)=>Math.abs(x)>22||Math.abs(z)>32||WAR_COVER.some(c=>Math.abs(x-c.x)<c.w/2+.48&&Math.abs(z-c.z)<c.d/2+.48);
 export function initWar(api){
-  const w={active:false,room:null};let practice=null;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
+  const w={active:false,room:null};let practice=null,practiceClock=0;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
   let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
   let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
   let objectiveMarker=null,pendingAbility=false;
@@ -21,11 +22,11 @@ export function initWar(api){
   const audio=new FieldAudio();audio.volume=.22;
   const message=s=>{$('warStatus').textContent=s;};
   const me=()=>w.room?.players.find(p=>p.id===w.room.me);
-  const now=()=>Date.now()+clockOffset;
+  const now=()=>practice?practiceClock:Date.now()+clockOffset;
   const elapsed=()=>w.room?.startsAt?(Math.min(now(),w.room.endedAt||Infinity)-w.room.startsAt)/1000:-4;
   async function request(action,payload={}){
     const sent=Date.now(),state=practice?practice.update(payload):await cloud.rpc(action,payload),rtt=Date.now()-sent;
-    if(state.serverNow&&rtt<bestRtt){bestRtt=rtt;clockOffset=state.serverNow-(sent+Date.now())/2;}
+    if(!practice&&state.serverNow&&rtt<bestRtt){bestRtt=rtt;clockOffset=state.serverNow-(sent+Date.now())/2;}
     lastNetwork=performance.now();lastRtt=rtt;return state;
   }
   function stop(){clearInterval(timer);timer=null;busy=false;}
@@ -55,8 +56,8 @@ export function initWar(api){
     finally{button.disabled=false;}
   }
   $('warBots').onclick=()=>{
-    const name=cleanCallsign($('racerName').value);w.exit();pendingAbility=false;lastInput={};
-    practice=createWarPractice(name,{equipped:cloud.profile?.equipped,xp:cloud.profile?.xp,operation:$('localOperation').value,role:$('localRole').value});
+    const name=cleanCallsign($('racerName').value);w.exit();practiceClock=Date.now();pendingAbility=false;lastInput={};
+    practice=createWarPractice(name,{now:()=>practiceClock,equipped:cloud.profile?.equipped,xp:cloud.profile?.xp,operation:$('localOperation').value,role:$('localRole').value});
     apply(practice.state);poll();
   };
   $('warCloudBots').onclick=()=>prepare($('warCloudBots'),async()=>{
@@ -127,6 +128,7 @@ export function initWar(api){
       if(!w.active)build();
       const own=me();
       if(own){
+        if(own.hp<(w.lastHealth??100))feedback('damage');w.lastHealth=own.hp;
         const distance=visual.distanceTo(new THREE.Vector3(own.x,own.y,own.z));
         if(distance>4||own.hp<=0)visual.set(own.x,own.y,own.z);
         else visual.lerp(new THREE.Vector3(own.x,own.y,own.z),.45);
@@ -137,27 +139,28 @@ export function initWar(api){
           const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(e.x,e.y,e.z),new THREE.Vector3(e.tx,e.ty,e.tz)]);
           const mat=new THREE.LineBasicMaterial({color:e.team==='blue'?'#8addff':'#ff8a64',transparent:true,opacity:.8});
           const line=new THREE.Line(geo,mat);api.world.add(line);tracers.push({line,age:0});
-          if(e.from===state.me){api.tone(68,.06,'sawtooth',.05);if(e.hit)$('warReticle').classList.add('hit');setTimeout(()=>$('warReticle').classList.remove('hit'),100);}
+          if(e.from===state.me){api.tone(68,.06,'sawtooth',.05);if(e.hit){$('warReticle').classList.add('hit');feedback('hit');}setTimeout(()=>$('warReticle').classList.remove('hit'),100);}
         }
       }
       if(state.endedAt&&!ended)end();
     }else renderLobby();
   }
   function build(){
-    ended=false;w.active=true;seq=w.room.nextSeq||0;lastEvents=new Set();models=new Map();tracers=[];
+    ended=false;w.active=true;w.lastHealth=100;seq=w.room.nextSeq||0;lastEvents=new Set();models=new Map();tracers=[];
     api.graphics(true);api.clearWorld();api.show(null);api.setMode('playing');document.body.classList.add('war-active');
     $('warHud').classList.remove('hidden');$('roleAbility').classList.toggle('hidden',!w.room.objective);api.setLook(me()?.team==='red'?Math.PI:0,.18);api.clearKeys();
     const useButton=$('touchControls')?.querySelector('[data-key="e"]');if(useButton)useButton.innerHTML='E<br><small>RELOAD</small>';
     const crouchButton=$('touchControls')?.querySelector('[data-key="c"]');if(crouchButton)crouchButton.innerHTML='C<br><small>CROUCH</small>';
     A.applyEnv('combat',api.scene,api.lights,api.renderer);api.scene.fog=new THREE.Fog('#b8ae8e',65,160);
-    api.box(58,.3,80,'#a99b70',0,-.18,0);
+    api.box(58,.3,80,'#a99b70',0,-.18,0);dressField(api.world,'war');
     objectiveMarker=null;
     if(w.room.objective&&w.room.objective.id!=='elimination'){
       const o=w.room.objective;
       objectiveMarker=new THREE.Group();
       const ring=new THREE.Mesh(new THREE.TorusGeometry(2,.12,8,32),new THREE.MeshBasicMaterial({color:'#ffc72c'}));
       ring.rotation.x=-Math.PI/2;objectiveMarker.add(ring);
-      if(o.id==='escort'){const truck=new A.Builder();truck.box(1.8,1.3,3.2,'#596940',0,.9,0).box(1.8,1.6,1.2,'#728354',0,1.1,-1.7);truck.mesh(objectiveMarker);}
+      const beacon=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,2.5,8),new THREE.MeshBasicMaterial({color:'#ffe3a0'}));beacon.position.y=1.25;objectiveMarker.add(beacon);
+      if(o.id==='escort'){const truck=new A.Builder();truck.box(1.8,1.3,3.2,'#596940',0,.9,0).box(1.8,1.6,1.2,'#728354',0,1.1,-1.7);for(const x of [-.95,.95])for(const z of [-1.1,1.1])truck.cyl(.35,.35,.18,'#272a25',x,.38,z,10,0,0,Math.PI/2);truck.mesh(objectiveMarker);}
       api.world.add(objectiveMarker);
     }
     const b=new A.Builder();
@@ -208,7 +211,8 @@ export function initWar(api){
   $('roleAbility').onclick=()=>{if(w.room?.objective&&api.mode()==='playing')pendingAbility=true;};
   $('warAudio').onchange=()=>{audio.mode=$('warAudio').value;};
   $('warLeave').onclick=()=>{
-    api.show('warExit');api.setMode('warExit');api.clearKeys();fireMouse=false;
+    lastInput={};pendingJump=pendingReload=pendingFire=pendingAbility=false;
+    $('warExitHeading').textContent=practice?'LOCAL PRACTICE PAUSED':'YOUR SQUAD IS STILL FIGHTING';$('warExitNote').textContent=practice?'The local clock and bots are stopped. Resume when ready.':'Online matches do not pause. Return to the fight or leave this operation.';api.show('warExit');api.setMode('warExit');api.clearKeys();fireMouse=false;
     if(document.pointerLockElement===api.canvas)document.exitPointerLock();
   };
   $('warStay').onclick=()=>{api.show(null);api.setMode('playing');api.clearKeys();};
@@ -227,7 +231,7 @@ export function initWar(api){
   w.pointerMove=e=>{
     if(document.pointerLockElement!==api.canvas)return false;
     const {yaw,pitch}=api.look();
-    api.setLook(yaw-e.movementX*.003,Math.max(-.65,Math.min(.9,pitch+e.movementY*.002)));
+    api.setLook(yaw-e.movementX*.003*(api.settings?.().sensitivity||1),Math.max(-.65,Math.min(.9,pitch+e.movementY*.002*(api.settings?.().sensitivity||1))));
     return true;
   };
   window.addEventListener('blur',()=>{fireMouse=false;});
@@ -237,6 +241,7 @@ export function initWar(api){
   };
   w.update=dt=>{
     if(!w.active||ended)return;
+    if(practice&&api.mode()==='playing')practiceClock+=dt*1000;
     const input=api.input(),playing=api.mode()==='playing';
     let {yaw,pitch}=api.look();
     if(playing){

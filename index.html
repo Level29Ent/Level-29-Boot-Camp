@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="./command.css" />
 <link rel="stylesheet" href="./war.css" />
 <link rel="stylesheet" href="./mout.css" />
+<link rel="stylesheet" href="./presentation.css" />
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
@@ -103,16 +104,16 @@
       <h2 class="sheet-title">MOUT<br>SHOOT HOUSE</h2>
       <p class="brief-text">Military Operations on Urban Terrain. Breach four ground-floor container rooms, climb the metal ramp, then clear two stacked upper rooms and extract from the catwalk.</p>
       <ul class="mout-orders"><li>180 seconds. Clear all 12 red threats and enter all six rooms.</li><li>Blue targets are NO SHOOT: each hit costs 250 drill points.</li><li>Move within 2m of a door and press E / BREACH. Doors block shots until opened.</li><li>WASD / joystick moves; drag or captured mouse aims; J / left mouse fires; K / right mouse aims down sights; R or Space reloads; C crouches; Shift sprints.</li><li>Touch: left joystick moves, swipe the scene to look, hold FIRE, tap BREACH / RELOAD. P / Escape pauses the local timer.</li></ul>
-      <p class="race-fine">Practice targets only. No cloud login needed. Drill scores are session-local and do not award global rank, cash or XP.</p>
+      <p class="race-fine">Practice targets only. No cloud login needed. Successful extraction records save on this device only, with no global rank, cash or XP.</p><p id="moutBest" class="race-fine"></p>
       <div class="menu row"><button id="moutDeploy" class="btn primary">Deploy into shoot house</button><button id="moutBack" class="btn">Back to base</button></div>
     </div>
   </section>
   <section id="moutPause" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL DRILL PAUSED / CLOCK STOPPED</div><h2 class="sheet-title">HOLD POSITION</h2><div class="menu"><button id="moutResume" class="btn primary">Resume drill</button><button id="moutAbort" class="btn">Abort to base</button></div></div></section>
-  <section id="moutResult" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">MOUT / AFTER-ACTION REPORT</div><h2 id="moutResultTitle" class="sheet-title">EXTRACTION COMPLETE</h2><p id="moutResultSummary" class="brief-text"></p><p id="moutResultStats" class="brief-text"></p><p class="race-fine">Accuracy = threat hits / shots fired. Drill score rewards threats, accuracy and time remaining; each no-shoot hit deducts 250 points. Session-local practice only.</p><div class="menu row"><button id="moutRetry" class="btn primary">Run drill again</button><button id="moutResultBack" class="btn">Back to base</button></div></div></section>
+  <section id="moutResult" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">MOUT / AFTER-ACTION REPORT</div><h2 id="moutResultTitle" class="sheet-title">EXTRACTION COMPLETE</h2><p id="moutResultSummary" class="brief-text"></p><p id="moutResultStats" class="brief-text"></p><p id="moutRecordStatus" class="race-fine" role="status"></p><p class="race-fine">Accuracy = threat hits / shots fired. Drill score rewards threats, accuracy and time remaining; each no-shoot hit deducts 250 points. Practice only · personal bests save on this device.</p><div class="menu row"><button id="moutRetry" class="btn primary">Run drill again</button><button id="moutResultBack" class="btn">Back to base</button></div></div></section>
   <aside id="moutHud" class="hidden" aria-label="Shoot house tactical HUD">
     <div class="mout-top"><div><small>CLEARANCE TIME</small><strong id="moutClock">0:00 / 3:00</strong></div><div><small>ACCURACY</small><strong id="moutAccuracy">0%</strong></div><div><small>MAGAZINE</small><strong id="moutAmmo">12 / 12</strong></div><button id="moutPauseButton">Pause drill</button></div>
     <div class="mout-mission"><b id="moutClearance"></b><p id="moutObjective" role="status" aria-live="polite"></p><small id="moutRoomList"></small></div>
-    <div class="mout-reticle" aria-hidden="true">+</div><div class="mout-hint">RED = THREAT · BLUE = NO SHOOT<br>E breach · R / Space reload · J fire · K aim · C crouch</div>
+    <div id="moutReticle" class="mout-reticle" aria-hidden="true">+</div><div class="mout-hint">RED = THREAT · BLUE = NO SHOOT<br>E breach · R / Space reload · J fire · K aim · C crouch</div>
   </aside>
 
   <section id="service" class="screen hidden">
@@ -299,7 +300,7 @@
     <div class="sheet war-sheet war-lobby"><div class="brief-phase" id="warLobbyMode">PVP / TEAM WAR</div><h2 class="sheet-title">ASSEMBLE YOUR SQUADS</h2><div class="room-code-label">ROOM CODE</div><div id="warLobbyCode"></div><button id="warCopy" class="btn">Copy room code</button><div class="war-team-grid"><div><h3 class="blue">ALPHA</h3><div id="lobbyTeamBlue"></div></div><div><h3 class="red">BRAVO</h3><div id="lobbyTeamRed"></div></div></div><p id="warLobbyNote" class="race-fine" role="status">Share the game link and this code. Players are assigned to balanced teams. Bots fill the remaining slots at deployment.</p><div class="menu row"><button id="warStart" class="btn primary">Deploy 5v5</button><button id="warLobbyLeave" class="btn">Leave room</button></div></div>
   </section>
   <section id="warExit" class="screen hidden">
-    <div class="sheet narrow"><div class="brief-phase">LIVE OPERATION</div><h2 class="sheet-title">YOUR SQUAD IS STILL FIGHTING</h2><p class="brief-text">Online matches do not pause. Return to the fight or leave this operation.</p><div class="menu"><button class="btn primary" id="warStay">Back to the fight</button><button class="btn" id="warLeaveConfirm">Leave match</button></div></div>
+    <div class="sheet narrow"><div class="brief-phase">LIVE OPERATION</div><h2 class="sheet-title" id="warExitHeading">YOUR SQUAD IS STILL FIGHTING</h2><p class="brief-text" id="warExitNote">Online matches do not pause. Return to the fight or leave this operation.</p><div class="menu"><button class="btn primary" id="warStay">Back to the fight</button><button class="btn" id="warLeaveConfirm">Leave match</button></div></div>
   </section>
   <section id="warResult" class="screen hidden">
     <div class="sheet narrow"><div class="brief-phase">5v5 / AFTER-ACTION REPORT</div><h2 class="sheet-title" id="warResultHeading">SQUAD VICTORY</h2><p id="warResultSummary" class="brief-text"></p><p id="warRewardText" class="race-fine" role="status"></p><p id="warDrillReport" class="race-fine"></p><div id="warResultRoster"></div><div class="menu row"><button id="warAgain" class="btn primary">Redeploy</button><button id="warResultCommand" class="btn">Collect rewards</button><button id="warResultTitleBack" class="btn">Base</button></div></div>

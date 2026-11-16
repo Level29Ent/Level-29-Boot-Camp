@@ -51,3 +51,16 @@
  #warScores{inset:8% 3%;padding:18px}.war-score-row{font-size:16px;gap:7px;grid-template-columns:1fr 18px 18px}.war-score-header h3{font-size:28px}
  #warResult .sheet{padding:22px 20px}#warResult .war-result-player{font-size:16px}
 }
+
+/* Local objective operations stay separate from authoritative cloud modes. */
+.field-operations{border:1px solid #b49c55;padding:20px;margin:20px 0;background:#172018;color:#eee6ce}
+.field-operations h3{color:#ffc72c;margin:8px 0}
+.field-operations p{line-height:1.5}
+.operation-options{display:flex;flex-wrap:wrap;gap:18px}
+.operation-options label{display:flex;flex:1;min-width:210px;flex-direction:column;gap:8px;font-size:12px;color:#e0cf9a}
+.operation-options select{padding:12px;background:#10170f;color:#fff;border:1px solid #a89b6b;max-width:100%}
+#operationStatus{position:absolute;top:138px;left:50%;transform:translateX(-50%);max-width:55vw;padding:8px;background:#10170fe8;color:#ffe39b;text-align:center;font-size:13px;pointer-events:none}
+#operationStatus:empty{display:none}
+#roleAbility{position:absolute;right:20px;bottom:180px;pointer-events:auto;padding:12px;color:#ffe39b;background:#172018;border:1px solid #d4b456;min-height:44px}
+#roleAbility:disabled{opacity:.6}
+@media(max-width:700px){#operationStatus{top:115px;max-width:none;width:88vw;font-size:11px}#roleAbility{right:12px;bottom:280px;max-width:170px;font-size:11px}.field-operations{padding:12px}}

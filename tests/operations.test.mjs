@@ -9,10 +9,10 @@ test('capture is contested and wins at 60 seconds, not by kills',()=>{
   r.z=-20;stepObjective(o,[b,r],scores,60);assert.equal(scores.blue,60);assert.equal(o.won,true);
 });
 test('intel drops on death and must return to own base',()=>{
-  const o=createObjective('intel'),b=player('you','blue',0,-25),scores={blue:0,red:0};
+  const o=createObjective('intel'),b=player('you','blue',10,0),scores={blue:0,red:0};
   stepObjective(o,[b],scores,.1);assert.equal(o.carrier,'you');assert.equal(scores.blue,0);
   b.hp=0;stepObjective(o,[b],scores,.1);assert.equal(o.carrier,null);
-  b.hp=100;stepObjective(o,[b],scores,.1);b.z=27;stepObjective(o,[b],scores,.1);assert.equal(scores.blue,1);assert.equal(o.carrier,null);
+  b.hp=100;stepObjective(o,[b],scores,.1);b.x=0;b.z=27;stepObjective(o,[b],scores,.1);assert.equal(scores.blue,1);assert.equal(o.carrier,null);
 });
 test('escort needs friendly presence and stops under contest',()=>{
   const o=createObjective('escort'),b=player('you','blue',o.x,o.z),r=player('enemy','red',o.x,o.z),scores={blue:0,red:0};
@@ -57,4 +57,11 @@ test('corrupt or denied storage does not block play or claim persistence',()=>{
   const denied={getItem(){throw Error('denied')},setItem(){throw Error('denied')}};
   assert.equal(bestRace(0,denied),null);assert.equal(saveRace(0,10,[[0,0,0,0,0,0]],denied).saved,false);assert.equal(saveBadges(['x'],denied),false);
   const corrupt={getItem:()=>'{bad json'};assert.equal(bestRace(0,corrupt),null);
+});
+
+test('intel spawns neutrally after delivery, never awarding a free base capture',()=>{
+  const o=createObjective('intel'),b=player('you','blue',0,27),r=player('red','red',0,-27),scores={blue:0,red:0};
+  stepObjective(o,[b,r],scores,1);assert.equal(o.carrier,null);assert.deepEqual(scores,{blue:0,red:0});
+  Object.assign(b,{x:10,z:0});stepObjective(o,[b,r],scores,.1);Object.assign(b,{x:0,z:27});stepObjective(o,[b,r],scores,.1);
+  assert.equal(scores.blue,1);stepObjective(o,[b,r],scores,1);assert.equal(o.carrier,null);assert.equal(scores.blue,1);
 });

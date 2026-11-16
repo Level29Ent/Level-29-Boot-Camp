@@ -16,8 +16,8 @@ export const ROLES={
 const near=(p,q,r=4)=>p.hp>0&&Math.hypot(p.x-q.x,p.z-q.z)<r;
 export function createObjective(mode='elimination'){
   const id=OPERATIONS[mode]?mode:'elimination';
-  return {id,x:0,z:id==='intel'?-25:id==='escort'?24:id==='crucible'?20:12,stage:0,hold:0,carrier:null,progress:0,won:false,
-    text: id==='crucible'?'Jump through the gold rally marker':id==='intel'?'Collect intel at Bravo, return it to Alpha':id==='escort'?'Escort supply truck to the north gate; enemies contest within 5m':id==='zones'?'Hold the gold zone uncontested to earn 60 points':'First squad to 30 eliminations'};
+  return {id,x:id==='intel'?10:0,z:id==='intel'?0:id==='escort'?24:id==='crucible'?20:12,stage:0,hold:0,carrier:null,progress:0,won:false,
+    text: id==='crucible'?'Jump through the gold rally marker':id==='intel'?'Collect midfield intel, return it to your base':id==='escort'?'Escort supply truck to the north gate; enemies contest within 5m':id==='zones'?'Hold the gold zone uncontested to earn 60 points':'First squad to 30 eliminations'};
 }
 export function objectiveDestination(o,p,players){
   if(o.id==='intel'){
@@ -41,7 +41,7 @@ export function stepObjective(o,players,scores,dt){
     if(!carrier){carrier=players.find(p=>near(p,o,2));if(carrier)o.carrier=carrier.id;}
     if(carrier){o.x=carrier.x;o.z=carrier.z;
       if(near(carrier,{x:0,z:carrier.team==='blue'?27:-27},3)){
-        scores[carrier.team]++;o.x=0;o.z=carrier.team==='blue'?-25:25;o.carrier=null;
+        scores[carrier.team]++;o.x=10;o.z=0;o.carrier=null;
       }
     }
     o.text=carrier?'Intel carrier: '+carrier.name+' · return to your base':'Collect gold intel; return it to your base';

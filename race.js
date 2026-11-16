@@ -1,3 +1,4 @@
+import {createModeLifecycle} from './mode-lifecycle.js';
 import {afterAction} from './career.js';
 import {styleFor} from './avatar-styles.js';
 import {bestRace,saveRace,ghostAt} from './field-records.js';
@@ -14,6 +15,7 @@ const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const colors=['#79d7ff','#ff9c65','#b6e77b','#d5a5ff','#ffdc72','#8ae0c1','#f8a9c3'];
 const botNames=['Sgt. Steel','Viper','Ghost','Echo','Raider','Falcon','Bulldog'];
 export function initRace(api){
+  const lifecycle=createModeLifecycle();
   const campaign=api.levels.slice(),courses=createRaceCourses(),audio=new FieldAudio();
   const nextCourse=createCourseRotation(courses.length);
   const r={active:false,online:false,finished:false,elapsed:0,finishTime:null,entries:[],bots:[],course:0};
@@ -27,12 +29,15 @@ export function initRace(api){
   function useCourses(){api.levels.splice(0,api.levels.length,...courses);}
   function useCampaign(){api.levels.splice(0,api.levels.length,...campaign);}
   async function request(path,data,method){
-    const sent=Date.now(),parts=path.split('/').filter(Boolean),code=parts[0];
+    const ticket=lifecycle.current(),sent=Date.now(),parts=path.split('/').filter(Boolean),code=parts[0];
     await cloud.ensure(data?.name||name());
+    lifecycle.assert(ticket);
     if(data?.name&&data.name!==cloud.profile.name)await cloud.mutate('rename',{name:data.name});
+    lifecycle.assert(ticket);
     const actions={join:'room_join',start:'room_start',move:'race_move',leave:'room_leave'};
     const action=!code?'race_create':actions[parts[1]]||'room_state';
     const body=await cloud.rpc(action,{...data,code,expectedKind:'race'});
+    lifecycle.assert(ticket);
     const received=Date.now(),rtt=received-sent;
     if(body.serverNow&&rtt<bestRtt){serverOffset=body.serverNow-(sent+received)/2;bestRtt=rtt;}
     if(body.kind!=='race'&&action==='room_join')throw new Error('That is a war room. Join it from 5v5 War instead.');
@@ -41,8 +46,8 @@ export function initRace(api){
   function stopPolling(){clearInterval(pollTimer);pollTimer=null;busy=false;}
   function leave(){
     stopPolling();
-    if(room&&token)request('/'+room.code+'/leave',{}).catch(()=>{});
-    room=null;token='';r.online=false;
+    if(room&&token)cloud.rpc('room_leave',{code:room.code}).catch(()=>{});
+    lifecycle.invalidate();room=null;token='';r.online=false;
   }
   function disposeGhost(){if(ghostModel)ghostModel.traverse(o=>{if(o.isMesh)o.material.dispose();});ghostModel=null;}
   r.exit=()=>{
@@ -64,28 +69,28 @@ export function initRace(api){
   $('raceCloudSolo').onclick=async()=>{
     const button=$('raceCloudSolo');button.disabled=true;status('Connecting to optional cloud race…');
     try{
-      leave();await cloud.ensure(name());
+      leave();const ticket=lifecycle.current();await cloud.ensure(name());lifecycle.assert(ticket);
       room=await request('',{name:name(),course:nextCourse()});token=room.me;r.online=true;
       const state=await request('/'+room.code+'/start',{});applyState(state);poll();
-    }catch(e){status(e.message);}finally{button.disabled=false;}
+    }catch(e){if(!e.staleSession)status(e.message);}finally{button.disabled=false;}
   };
   $('raceMusic').onchange=()=>{audio.mode=$('raceMusic').value;api.startAudio();};
   $('raceVolume').oninput=()=>{audio.volume=+$('raceVolume').value/100;$('volumeValue').textContent=$('raceVolume').value+'%';};
   $('createRoom').onclick=async()=>{
     const b=$('createRoom');b.disabled=true;status('Creating room…');
     try{
-      leave();await cloud.ensure(name());
+      leave();const ticket=lifecycle.current();await cloud.ensure(name());lifecycle.assert(ticket);
       const state=await request('',{name:name(),course:nextCourse()});
       token=state.me;room=state;r.online=true;showRoom();poll();
     }
-    catch(e){status(e.message);}finally{b.disabled=false;}
+    catch(e){if(!e.staleSession)status(e.message);}finally{b.disabled=false;}
   };
   $('joinRoom').onclick=async()=>{
     const code=$('roomCode').value.trim().toUpperCase();
     if(!/^[A-F0-9]{6}$/.test(code)){status('Enter the six-character room code from your friend.');return;}
     const b=$('joinRoom');b.disabled=true;status('Joining room…');
     try{leave();const state=await request('/'+code+'/join',{name:name()});token=state.me;room=state;r.online=true;r.course=state.course;showRoom();poll();}
-    catch(e){status(e.message);}finally{b.disabled=false;}
+    catch(e){if(!e.staleSession)status(e.message);}finally{b.disabled=false;}
   };
   function showRoom(){
     api.setMode('raceLobby');api.show('raceLobby');
@@ -124,17 +129,18 @@ export function initRace(api){
   }
   async function pollOnce(){
     if(busy||!room)return;busy=true;
-    const code=room.code;
+    const code=room.code,ticket=lifecycle.current();
     try{
       const state=await request('/'+code+(r.active&&!ended?'/move':''),r.active&&!ended?movement():undefined);
       if(room?.code!==code)return;
       applyState(state);
       if(r.active)$('raceConnection').textContent='LIVE ROOM '+room.code;
     }catch(e){
+      if(!lifecycle.valid(ticket)||e.staleSession)return;
       pollFailures++;
       if(r.active)$('raceConnection').textContent='RECONNECTING · '+pollFailures;
       else $('roomNotice').textContent=e.message;
-    }finally{busy=false;}
+    }finally{if(lifecycle.valid(ticket))busy=false;}
   }
   function poll(){stopPolling();pollTimer=setInterval(pollOnce,250);}
   function start(course){
@@ -296,14 +302,15 @@ export function initRace(api){
     api.setMode('result');api.show('raceResult');drawResults();
     $('raceRewardText').textContent=r.online?'Unranked online race · no cash or XP.':'Local practice complete · No cloud cash or XP. Your callsign, training progress and style stay in this browser.';
     if(r.online){
-      stopPolling();const code=room.code;
+      stopPolling();const code=room.code,ticket=lifecycle.current();
       setTimeout(async()=>{
         try{
+          if(!lifecycle.valid(ticket))return;
           const state=await request('/'+code);
           if(room?.code===code){room=state;drawResults();}
-          await cloud.refresh();
+          await cloud.refresh();if(!lifecycle.valid(ticket))return;
           $('raceRewardText').textContent='Unranked race complete. Client-reported race positions never award cash, XP or daily eligibility.';
-        }catch(e){$('raceRewardText').textContent='Online race refresh failed: '+e.message;}
+        }catch(e){if(lifecycle.valid(ticket))$('raceRewardText').textContent='Online race refresh failed: '+e.message;}
       },1000);
     }
     api.vo('complete1');

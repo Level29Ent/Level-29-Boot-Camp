@@ -1,6 +1,9 @@
 const KEY='b29-field-records-v1';
 export function readRecords(storage){
-  try{storage??=globalThis.localStorage;const value=JSON.parse(storage.getItem(KEY));return value&&value.version===1?value:{version:1,races:{},badges:[]};}
+  try{storage??=globalThis.localStorage;const value=JSON.parse(storage.getItem(KEY));
+    if(!value||value.version!==1)return {version:1,races:{},badges:[]};
+    const races=value.races&&typeof value.races==='object'&&!Array.isArray(value.races)?Object.fromEntries(Object.entries(value.races).filter(([key])=>/^(?:[0-9]|[1-9][0-9])$/.test(key))):{};
+    return {version:1,races,badges:Array.isArray(value.badges)?[...new Set(value.badges.filter(id=>['survivor','precision','support'].includes(id)))]:[],...(value.mout&&typeof value.mout==='object'?{mout:value.mout}:{})};}
   catch{return {version:1,races:{},badges:[]};}
 }
 export function saveBadges(ids,storage){
@@ -8,10 +11,10 @@ export function saveBadges(ids,storage){
 }
 export function bestRace(course,storage){
   const r=readRecords(storage).races?.[course];
-  return r&&Number.isFinite(r.time)&&r.time>0&&r.time<=60&&Array.isArray(r.samples)&&r.samples.length>0&&r.samples.length<=605&&r.samples.every(s=>Array.isArray(s)&&s.length===6&&s.every(Number.isFinite))?r:null;
+  return r&&Number.isFinite(r.time)&&r.time>0&&r.time<=60&&Array.isArray(r.samples)&&r.samples.length>0&&r.samples.length<=605&&r.samples.every((s,i)=>Array.isArray(s)&&s.length===6&&s.every(Number.isFinite)&&s[0]>=0&&s[0]<=r.time&&s[5]>=0&&s[5]<=1&&(i===0||s[0]>=r.samples[i-1][0]))?r:null;
 }
 export function saveRace(course,time,samples,storage){
-  if(!Number.isFinite(time)||time<=0||time>60||!samples.length)return {saved:false,best:false};
+  if(!Number.isFinite(time)||time<=0||time>60||!Array.isArray(samples)||!samples.length||samples.length>605||!samples.every((s,i)=>Array.isArray(s)&&s.length===6&&s.every(Number.isFinite)&&s[0]>=0&&s[0]<=time&&s[5]>=0&&s[5]<=1&&(i===0||s[0]>=samples[i-1][0])))return {saved:false,best:false};
   const old=bestRace(course,storage);if(old&&old.time<=time)return {saved:true,best:false,delta:time-old.time};
   try{storage??=globalThis.localStorage;const data=readRecords(storage);data.races||={};data.races[course]={time,samples:samples.slice(0,605)};storage.setItem(KEY,JSON.stringify(data));return {saved:true,best:true,delta:old?time-old.time:null};}
   catch{return {saved:false,best:true};}

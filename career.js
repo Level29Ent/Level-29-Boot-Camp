@@ -4,7 +4,12 @@ export const MEDALS=[
   {id:'clean',name:'Clean Breach',desc:'Extract from MOUT with no blue hits and at least 80% accuracy.',cosmetic:'earned-breach'},
   {id:'team',name:'Squad Backbone',desc:'Complete a local War match with two teammate assists and 10 objective seconds.',cosmetic:'earned-support'}
 ];
-export function readCareer(storage){try{const data=JSON.parse((storage??globalThis.localStorage).getItem(KEY));return {medals:Array.isArray(data?.medals)?data.medals.filter(x=>MEDALS.some(m=>m.id===x)):[],daily:data?.daily&&typeof data.daily==='object'?data.daily:{},tutorial:data?.tutorial===true};}catch{return {medals:[],daily:{},tutorial:false};}}
+export function readCareer(storage){
+  try{const data=JSON.parse((storage??globalThis.localStorage).getItem(KEY));
+    const daily=Object.fromEntries(Object.entries(data?.daily||{}).filter(([date,ids])=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&Array.isArray(ids)).sort(([a],[b])=>a.localeCompare(b)).slice(-14).map(([date,ids])=>[date,[...new Set(ids.filter(id=>['order-0','order-1','order-2'].includes(id)))]]));
+    return {medals:Array.isArray(data?.medals)?[...new Set(data.medals.filter(x=>MEDALS.some(m=>m.id===x)))]:[],daily,tutorial:data?.tutorial===true};
+  }catch{return {medals:[],daily:{},tutorial:false};}
+}
 export function cosmeticUnlocked(id,storage){const medal=MEDALS.find(m=>m.cosmetic===id);return !medal||readCareer(storage).medals.includes(medal.id);}
 export function recordCareer(result,storage){
   const data=readCareer(storage),earned=[];

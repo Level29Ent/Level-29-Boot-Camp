@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createModeLifecycle} from './mode-lifecycle.js';
 import {afterAction,recordCareer} from './career.js';
 import {dressField,feedback,dressAtmosphere} from './presentation.js';
 import {OPERATIONS,ROLES,drillChallenges,CRUCIBLE_HURDLES} from './operations.js';
@@ -15,6 +16,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const collides=(x,z)=>Math.abs(x)>22||Math.abs(z)>32||WAR_COVER.some(c=>Math.abs(x-c.x)<c.w/2+.48&&Math.abs(z-c.z)<c.d/2+.48);
 export function initWar(api){
+  const lifecycle=createModeLifecycle();
   const w={active:false,room:null};let practice=null,practiceClock=0;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
   let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
   let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
@@ -26,12 +28,14 @@ export function initWar(api){
   const now=()=>practice?practiceClock:Date.now()+clockOffset;
   const elapsed=()=>w.room?.startsAt?(Math.min(now(),w.room.endedAt||Infinity)-w.room.startsAt)/1000:-4;
   async function request(action,payload={}){
-    const sent=Date.now(),state=practice?practice.update(payload):await cloud.rpc(action,payload),rtt=Date.now()-sent;
+    const ticket=lifecycle.current(),sent=Date.now(),state=practice?practice.update(payload):await cloud.rpc(action,payload),rtt=Date.now()-sent;
+    lifecycle.assert(ticket);
     if(!practice&&state.serverNow&&rtt<bestRtt){bestRtt=rtt;clockOffset=state.serverNow-(sent+Date.now())/2;}
     lastNetwork=performance.now();lastRtt=rtt;return state;
   }
   function stop(){clearInterval(timer);timer=null;busy=false;}
   w.exit=()=>{
+    lifecycle.invalidate();
     const code=practice?null:w.room?.code;stop();practice=null;
     if(code)cloud.rpc('room_leave',{code}).catch(()=>{});
     w.active=false;w.room=null;audio.stop();fireMouse=false;pendingJump=pendingReload=pendingFire=false;document.body.classList.remove('war-active');
@@ -51,9 +55,9 @@ export function initWar(api){
   $('warBack').onclick=()=>{w.exit();api.title();};
   $('warMenuCommand').onclick=()=>{w.exit();api.openCommand();};
   async function prepare(button,fn){
-    button.disabled=true;message('Connecting to command…');api.startAudio();
-    try{await cloud.ensure($('racerName').value);await fn();}
-    catch(e){message(e.message);}
+    const ticket=lifecycle.current();button.disabled=true;message('Connecting to command…');api.startAudio();
+    try{await cloud.ensure($('racerName').value);lifecycle.assert(ticket);await fn();}
+    catch(e){if(lifecycle.valid(ticket)&&!e.staleSession)message(e.message);}
     finally{button.disabled=false;}
   }
   $('warBots').onclick=()=>{
@@ -107,11 +111,11 @@ export function initWar(api){
   $('warStart').onclick=async()=>{
     $('warStart').disabled=true;
     try{apply(await request('room_start',{code:w.room.code}));}
-    catch(e){$('warLobbyNote').textContent=e.message;renderLobby();}
+    catch(e){if(!e.staleSession){$('warLobbyNote').textContent=e.message;renderLobby();}}
   };
   function poll(){stop();timer=setInterval(pollOnce,200);}
   async function pollOnce(){
-    if(busy||!w.room||ended)return;busy=true;const code=w.room.code;
+    if(busy||!w.room||ended)return;busy=true;const code=w.room.code,ticket=lifecycle.current();
     try{
       const payload={...lastInput,seq:++seq,code};pendingJump=pendingReload=pendingFire=pendingAbility=false;pendingOrder=null;
       const state=await request(w.active?'war_input':'room_state',payload);
@@ -119,9 +123,10 @@ export function initWar(api){
       apply(state);
       $('warNetwork').textContent=practice?'LOCAL PRACTICE · NO CLOUD REWARDS':'CLOUD LIVE · '+Math.round(lastRtt)+' ms';
     }catch(e){
+    if(!lifecycle.valid(ticket)||e.staleSession)return;
     if(w.active)$('warNetwork').textContent='RECONNECTING · '+e.message;
       else $('warLobbyNote').textContent=e.message;
-    }finally{busy=false;}
+    }finally{if(lifecycle.valid(ticket))busy=false;}
   }
   function apply(state){
     w.room=state;
@@ -350,12 +355,13 @@ export function initWar(api){
       const challenges=drillChallenges(own,true),saved=saveBadges(challenges.filter(c=>c.done).map(c=>c.id));
       $('warDrillReport').textContent='DRILL INSTRUCTOR: '+challenges.map(c=>(c.done?'✓ ':'— ')+c.name).join(' · ')+(saved?' · Badges saved in this browser.':' · Storage unavailable; badges not saved.');
       $('warRewardText').textContent='Local AI-squad practice complete. No cloud cash, XP or leaderboard scores awarded.';return;}
+    const ticket=lifecycle.current();
     $('warRewardText').textContent='Syncing match earnings…';
     try{
-      const p=await cloud.refresh(),reward=p.claims.find(c=>c.source==='match:'+w.room.code);
+      const p=await cloud.refresh();if(!lifecycle.valid(ticket))return;const reward=p.claims.find(c=>c.source==='match:'+w.room.code);
       $('warRewardText').textContent=reward?'+'+reward.cash+' Field Cash · +'+reward.xp+' XP saved. Visit Command for additional rewards.':
         'No reward: complete a match with at least 20 seconds of active movement or firing.';
-    }catch(e){$('warRewardText').textContent='Rewards are stored by the server. Refresh your dossier to check earnings.';}
+    }catch(e){if(lifecycle.valid(ticket))$('warRewardText').textContent='Rewards are stored by the server. Refresh your dossier to check earnings.';}
   }
   w.text=()=>({active:w.active,room:w.room?.code,kind:w.room?.mode,elapsed:+elapsed().toFixed(2),
     scores:w.room?.scores,me:me(),players:w.room?.players.map(({id,name,team,bot,hp,x,y,z,kills,deaths})=>({id,name,team,bot,hp,x,y,z,kills,deaths})),

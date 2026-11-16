@@ -56,14 +56,14 @@ export function stepObjective(o,players,scores,dt){
     scores.blue=o.progress;o.won=o.progress>=100;
   }
   if(o.id==='crucible'){
-    const own=blue.find(p=>!p.bot);if(!own)return;
-    if(o.stage===0&&near(own,o,3)&&own.y>.5){o.stage=1;o.x=0;o.z=11;o.text='Cross two low hurdles, then deliver supplies with an AI teammate (hold 5s)';}
+    const own=blue.filter(p=>!p.bot&&p.connected!==false).sort((a,b)=>(a.slot||0)-(b.slot||0))[0];if(!own)return;
+    if(o.stage===0&&near(own,o,3)&&own.y>.5){o.stage=1;o.x=0;o.z=11;o.text='Cross two low hurdles, then deliver supplies with a teammate (hold 5s)';}
     else if(o.stage===1){
-      o.hold=near(own,o,4)&&allies.some(p=>p.bot)?o.hold+dt:0;
+      o.hold=near(own,o,4)&&allies.some(p=>p.id!==own.id&&p.connected!==false)?o.hold+dt:0;
       if(o.hold>=5){o.stage=2;o.x=10;o.z=-12;o.startKills=blue.reduce((n,p)=>n+p.kills,0);o.text='Clear the route: squad must earn 3 eliminations';}
-    }else if(o.stage===2&&blue.reduce((n,p)=>n+p.kills,0)-o.startKills>=3){o.stage=3;o.x=0;o.z=-26;o.hold=0;o.text='Extract: rally here with at least two AI teammates for 5s';}
+    }else if(o.stage===2&&blue.reduce((n,p)=>n+p.kills,0)-o.startKills>=3){o.stage=3;o.x=0;o.z=-26;o.hold=0;o.text='Extract: rally here with at least two teammates for 5s';}
     else if(o.stage===3){
-      o.hold=near(own,o,5)&&allies.filter(p=>p.bot).length>=2?o.hold+dt:0;
+      o.hold=near(own,o,5)&&allies.filter(p=>p.id!==own.id&&p.connected!==false).length>=2?o.hold+dt:0;
       if(o.hold>=5){o.stage=4;o.won=true;o.text='Squad extracted';}
     }
     scores.blue=o.stage;

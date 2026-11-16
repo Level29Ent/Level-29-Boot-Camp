@@ -14,3 +14,8 @@
 @media(max-width:700px){.mout-survey-panel{padding:10px;margin-bottom:44px}.mout-survey-panel h2{font-size:23px}.mout-survey-panel p{font-size:11px}.mout-survey-panel .btn{padding:7px 9px;font-size:11px;min-height:36px}.mout-survey-screen{padding:8px!important}}
 @media(max-height:500px){.mout-survey-panel{max-width:540px;max-height:60vh;overflow:auto}.mout-survey-panel .race-fine{display:none}}
 .mout-survey-screen{backdrop-filter:none!important}
+
+#moutCourse{display:block;width:100%;padding:12px;background:#182822;color:#ede5c8;border:1px solid #879d89;font:inherit;margin:10px 0}
+.mout-nav{position:absolute;right:14px;bottom:100px;width:180px;background:#14241edc;padding:10px;border:1px solid #9ba58c}.mout-nav canvas{width:100%;height:auto}.mout-nav p{color:#f3e3b4;font-size:12px;line-height:1.4;margin-top:6px}
+@media(max-width:700px){.mout-nav{right:8px;bottom:260px;width:118px;padding:5px}.mout-nav p{font-size:10px}.mout-mission small{display:none}.mout-sheet .mout-orders{max-height:180px;overflow:auto}}
+@media(max-height:500px){.mout-nav{width:105px;bottom:150px}.mout-mission{max-width:310px}.mout-nav p{font-size:9px}}

@@ -1,0 +1,25 @@
+const {chromium}=require('playwright'),fs=require('fs'),assert=require('node:assert/strict');const root=process.cwd();const threeRoot=require('node:path').resolve(require('node:path').dirname(require.resolve('three')),'..');
+(async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log(e.message)});page.setDefaultTimeout(30000);
+await page.addInitScript(()=>{window.__moutTestTime=1000;});
+await page.route('**/*',r=>{const url=r.request().url();if(url.includes('cdn.jsdelivr.net/npm/three@0.160.0/'))return r.fulfill({path:threeRoot+'/' +url.split('three@0.160.0/')[1],headers:{'Access-Control-Allow-Origin':'*'},contentType:'application/javascript'});
+if(url.endsWith('/game.js'))return r.fulfill({body:fs.readFileSync(root+'/game.js','utf8').replaceAll('renderer.render(scene,camera)','void 0').replace("new THREE.WebGLRenderer({canvas:$('c'),antialias:true})","({setPixelRatio(){},setSize(){},shadowMap:{},info:{render:{calls:0,triangles:0}}})").replace('mout=initMout({world','mout=initMout({now:()=>window.__moutTestTime,world'),contentType:'application/javascript'});
+if(url.endsWith('/mout.js'))return r.fulfill({body:fs.readFileSync(root+'/mout.js','utf8').replace('  return m;',`  m.test={get targets(){return targets},face(yaw){look.yaw=yaw;look.pitch=0;},aimAt(t){const d=t.clone().sub(position.clone().add(new THREE.Vector3(0,1.65,0))).normalize();look.yaw=Math.atan2(-d.x,-d.z);look.pitch=Math.asin(d.y);updateCamera();}};return m;`),contentType:'application/javascript'});
+if(!url.startsWith('http://127.0.0.1:8080'))return r.abort();return r.continue();});
+await page.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.appReady,null,{polling:100});
+assert.equal(await page.locator('nav.home-groups section').count(),3);await page.click('#btnMout');await page.selectOption('#moutCourse','urban');await page.click('#moutDeploy');
+const result=await page.evaluate(()=>{
+ const m=window.__mout,frame=(ms=1000/60)=>{window.__moutTestTime+=ms;window.advanceTime(ms,false);};
+ const go=(x,z)=>{window.simulateInput('w',true);let n=0;while(!m.text().ended&&Math.hypot(m.text().x-x,m.text().z-z)>.12&&n++<1800){const p=m.text();m.test.face(Math.atan2(-(x-p.x),-(z-p.z)));frame();}window.simulateInput('w',false);if(n>=1800)throw Error('blocked toward '+x+','+z+' at '+JSON.stringify(m.text()));};
+ const act=key=>{window.simulateInput(key,true);frame();window.simulateInput(key,false);};
+ go(-3,1);act('e');go(-3,-3);
+ const shootRoom=id=>{for(const target of m.test.targets.filter(t=>t.room.id===id&&!t.friendly)){m.test.aimAt(target.meshes[0].position);act('j');for(let i=0;i<16;i++)frame();}};
+ shootRoom('U1');act('r');const reloading=m.text().reload>0;for(let i=0;i<90;i++)frame();
+ go(-1,-4);go(1,-4);go(3,-4);shootRoom('U2');
+ go(3,-1);act('e');go(3,1);go(8,1);go(8,-3);const mid=m.text();go(8,-6.7);const top=m.text();go(5,-6.7);go(3,-6.7);shootRoom('ROOF');go(0,-6.7);go(0,-2);
+ return {state:m.text(),mid,top,reloading};
+});
+assert.equal(result.state.success,true);assert.equal(result.state.hits,6);assert.equal(result.state.penalties,0);assert.ok(result.mid.y>1&&result.mid.y<2);assert.equal(result.top.y,3);assert.equal(result.reloading,true);
+assert.equal(await page.evaluate(()=>localStorage.getItem('b29-field-records-v1')),null);assert.equal(await page.evaluate(()=>localStorage.getItem('b29:career:v1')),null);assert.ok(await page.evaluate(()=>localStorage.getItem('b29:urban-best:v1')));
+await page.click('#moutResultBack');await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.click('#btnMout');await page.selectOption('#moutCourse','urban');await page.click('#moutSurvey');assert.match(await page.locator('#moutSurveyDescription').textContent(),/Playable urban block/);assert.deepEqual(errors,[]);
+console.log('PASS urban full keyboard route with no position teleport: courtyard -> breach -> two connected rooms, six actual target raycasts, reload -> 20-step exterior staircase -> rooftop -> extraction. Separate record/no classic medal; grouped menus/mobile/survey. Test harness supplies look heading and time, renderer stub.');console.log(JSON.stringify(result));
+}finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});

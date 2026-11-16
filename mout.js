@@ -1,15 +1,27 @@
 import * as THREE from 'three';
+import {URBAN_ROOMS,urbanFloorAt,urbanCanMove,urbanEntered,urbanExtract,sweepMove,URBAN_VIEW} from './urban-block.js';
+import {buildUrbanBlock} from './urban-view.js';
+import {moutNavigation,drawMoutMap} from './mout-navigation.js';
 import {buildMoutVillage,villageTexture} from './mout-village.js';
 import {MOUT_SURVEY_VIEWS,MOUT_WINDOW} from './mout-architecture.js';
 import {afterAction,recordCareer} from './career.js';
 import {bestDrill,saveDrillRecord} from './field-records.js';
 import {feedback} from './presentation.js';
 import * as A from './art.js';
-import {MOUT_LIMIT,MOUT_MAGAZINE,MOUT_ROOMS,wallsFor,floorAt,canMove,createDrill,tickDrill,recordShot,clearedRooms,accuracyFor,extractDrill,drillScore} from './mout-rules.js';
+import {MOUT_LIMIT,MOUT_MAGAZINE,MOUT_ROOMS,wallsFor,floorAt as classicFloor,canMove as classicMove,createDrill,tickDrill as classicTick,recordShot,clearedRooms as classicCleared,accuracyFor,extractDrill as classicExtract,drillScore as classicScore} from './mout-rules.js';
+import {saveUrbanRecord,readUrbanRecord} from './urban-records.js';
 const $=id=>document.getElementById(id);
 const stamp=seconds=>Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0');
 
 export function initMout(api){
+  let course='classic',ROOMS=MOUT_ROOMS;
+  const limit=()=>course==='urban'?240:MOUT_LIMIT;
+  const floorAt=(x,z,y)=>course==='urban'?urbanFloorAt(x,z,y):classicFloor(x,z);
+  const canMove=(x,z,y,opened)=>course==='urban'?urbanCanMove(x,z,y,opened):classicMove(x,z,y,opened);
+  const clearedRooms=state=>course==='urban'?ROOMS.filter(r=>state.entered.has(r.id)&&(state.hitsByRoom.get(r.id)||0)>=2):classicCleared(state);
+  const extractDrill=(state,x,y,z)=>course==='urban'?urbanExtract(state,{x,y,z}):classicExtract(state,x,y,z);
+  const drillScore=state=>course==='urban'?Math.max(0,state.hits*100+accuracyFor(state)*10+Math.floor(240-state.elapsed)*5-state.penalties*250):classicScore(state);
+  const tickDrill=(state,dt)=>{if(course==='classic')return classicTick(state,dt);if(state.ended)return;state.elapsed=Math.min(240,state.elapsed+dt);if(state.reload>0){state.reload=Math.max(0,state.reload-dt);if(!state.reload)state.ammo=MOUT_MAGAZINE;}if(state.elapsed>=240){state.ended=true;state.success=false;}};
   const m={active:false};let state=createDrill(),position=new THREE.Vector3(0,0,5),doors=[],targets=[],solids=[],ownedMaterials=[],ownedTextures=[],weapon=null;
   let heldFire=false,cooldown=0,notice='',noticeUntil=0,look={yaw:0,pitch:.05},saved=null,flash=0,survey=false,surveyView='village';
   const raycaster=new THREE.Raycaster(),center=new THREE.Vector2();
@@ -38,12 +50,14 @@ export function initMout(api){
       api.renderer.shadowMap.enabled=saved.shadows;api.camera.fov=saved.fov;api.camera.updateProjectionMatrix();saved=null;
     }
   };
-  m.open=()=>{api.stopModes();api.setMode('moutBrief');api.show('moutBrief');const best=bestDrill();$('moutBest').textContent=best?'YOUR BEST · '+best.score+' points · '+best.time.toFixed(2)+'s · '+best.accuracy+'% accuracy':'Complete an extraction to save your personal best on this device.';};
+  m.open=()=>{api.stopModes();api.setMode('moutBrief');api.show('moutBrief');updateBrief();};
+  const updateBrief=()=>{const urban=$('moutCourse').value==='urban',best=urban?readUrbanRecord():bestDrill();$('moutBest').textContent=best?(urban?'URBAN BLOCK BEST · ':'CONTAINER COURSE BEST · ')+best.score+' points · '+(best.time??0).toFixed(2)+'s':'Complete this route to save a separate personal best on this device.';$('moutBriefDescription').textContent=urban?'Enter the playable urban block: visit the courtyard, breach the connected U1/U2 ground rooms, clear six red targets across both rooms and the rooftop, climb the exterior east stairs, and extract at the green roof marker. Other village buildings are scenery.':'Six-room container drill in the daylight training village. Breach A1/B1/A2/B2, climb the central ramp, clear A3/B3 and extract on the upper catwalk. Other village buildings and stairs are scenery.';$('moutRouteGoal').textContent=urban?'240 seconds. Enter the courtyard and all three zones (U1, U2, ROOF), clear all six red targets, then extract.':'180 seconds. Enter all six rooms and clear all 12 red targets, then extract.';};
+  $('moutCourse').onchange=updateBrief;updateBrief();
   $('btnMout').onclick=m.open;$('moutBack').onclick=api.title;
   $('moutSurvey').onclick=()=>start(true);
   $('moutSurveyDeploy').onclick=()=>start();$('moutSurveyBack').onclick=()=>{m.exit();m.open();};
   for(const id of ['village','containers','upper'])$('moutView'+id).onclick=()=>setSurveyView(id);
-  function setSurveyView(id){const view=MOUT_SURVEY_VIEWS[id];if(!survey||!view)return;surveyView=id;api.camera.position.set(...view.position);api.camera.fov=52;api.camera.lookAt(new THREE.Vector3(...view.target));api.camera.updateProjectionMatrix();api.camera.updateMatrixWorld(true);A.updateArt(0,api.camera,new THREE.Vector3(0,0,-12),api.lights);$('moutSurveyDescription').textContent=view.label;for(const name of ['village','containers','upper'])$('moutView'+name).setAttribute('aria-pressed',String(id===name));api.show('moutSurveyScreen');}
+  function setSurveyView(id){const view=course==='urban'?URBAN_VIEW:MOUT_SURVEY_VIEWS[id];if(!survey||!view)return;surveyView=id;api.camera.position.set(...view.position);api.camera.fov=52;api.camera.lookAt(new THREE.Vector3(...view.target));api.camera.updateProjectionMatrix();api.camera.updateMatrixWorld(true);A.updateArt(0,api.camera,new THREE.Vector3(0,0,-12),api.lights);$('moutSurveyDescription').textContent=view.label;for(const name of ['village','containers','upper'])$('moutView'+name).setAttribute('aria-pressed',String(id===name));api.show('moutSurveyScreen');}
   $('moutDeploy').onclick=()=>start();$('moutRetry').onclick=()=>start();$('moutResultBack').onclick=api.title;
   $('moutPauseButton').onclick=()=>m.pause();$('moutResume').onclick=()=>m.pause();$('moutAbort').onclick=api.title;
   m.pause=()=>{
@@ -98,6 +112,7 @@ export function initMout(api){
     function box(w,h,d,material,x,y,z,blocking=false){
       const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;api.world.add(mesh);if(blocking)solids.push(mesh);return mesh;
     }
+    if(course==='urban'){buildUrbanBlock(api,{materials:ownedMaterials,textures:ownedTextures,solids,doors,targets});weapon=A.makeRifle(api.camera,.28,-.27,-.6);return;}
     // Gravel route; outer village is non-playable scenery beyond the room walls.
     const detail=new A.Builder();
     // Live drill walls are ray occluders; collision uses these same solid sections.
@@ -128,6 +143,7 @@ export function initMout(api){
       const hardware=new A.Builder();for(let z=-.8;z<.9;z+=.26)hardware.box(.06,2.2,.05,'#a59e87',-r.side*.1,0,z);
       for(const z of [-.66,.66])hardware.box(.055,2.2,.055,'#797e70',-r.side*.15,0,z);hardware.box(.11,.1,.3,'#525f57',-r.side*.19,-.2,.3);hardware.mesh(door);
       doors.push({room:r,mesh:door});
+      api.label(r.id,r.side*4.25,r.y+2.45,r.z+4.15,'#e7dab5',2.1);
       const sign=api.label(r.id+' / BREACH',r.side*1.34,r.y+2.56,r.z,'#e5d8b3',1.45);sign.rotation.y=r.side===1?-Math.PI/2:Math.PI/2;
       for(let i=0;i<3;i++){
         const friendly=i===2,z=r.z+(i===0?-1.8:i===1?1.8:0),x=r.side*6.2;
@@ -192,7 +208,7 @@ export function initMout(api){
     weapon=A.makeRifle(api.camera,.28,-.27,-.6);
   }
   function start(asSurvey=false){
-    m.exit();api.stopModes();api.clearWorld();survey=asSurvey;state=createDrill();position.set(0,0,5);look={yaw:0,pitch:.05};heldFire=false;cooldown=0;notice='CLEAR FOUR GROUND ROOMS, THEN TAKE THE RAMP';noticeUntil=5;flash=0;
+    m.exit();api.stopModes();api.clearWorld();survey=asSurvey;course=$('moutCourse').value==='urban'?'urban':'classic';ROOMS=course==='urban'?URBAN_ROOMS:MOUT_ROOMS;state=createDrill();position.set(0,0,5);look={yaw:0,pitch:.05};heldFire=false;cooldown=0;notice=course==='urban'?'ENTER BOTH ROOMS, THEN USE EXTERIOR STAIRS TO CLEAR THE ROOF':'CLEAR FOUR GROUND ROOMS, THEN TAKE THE RAMP';noticeUntil=5;flash=0;
     saved={hemiColor:api.lights.hemi.color.clone(),groundColor:api.lights.hemi.groundColor.clone(),hemiIntensity:api.lights.hemi.intensity,
       sunPosition:api.lights.sun.position.clone(),sunTarget:api.lights.sun.target.position.clone(),sunColor:api.lights.sun.color.clone(),sunIntensity:api.lights.sun.intensity,castShadow:api.lights.sun.castShadow,
       background:api.scene.background,fog:api.scene.fog,exposure:api.renderer.toneMappingExposure,shadows:api.renderer.shadowMap.enabled,fov:api.camera.fov};
@@ -200,13 +216,13 @@ export function initMout(api){
     api.lights.hemi.color.set('#d9e5df');api.lights.hemi.groundColor.set('#a19774');api.lights.hemi.intensity=1.65;
     api.lights.sun.color.set('#fff1d6');api.lights.sun.intensity=2.45;api.lights.sun.position.set(32,48,15);api.lights.sun.target.position.set(0,0,-12);api.lights.sun.castShadow=true;api.renderer.toneMappingExposure=.98;
     if(!api.camera.parent)api.scene.add(api.camera);
-    lastClock=clock();m.active=true;document.body.classList.add('mout-active');api.setMode('playing');api.show(null);api.clearKeys();controls(true);$('moutHud').classList.remove('hidden');api.startAudio();build();api.applyQuality?.();updateCamera();renderHud();A.updateArt(0,api.camera,new THREE.Vector3(0,0,-12),api.lights);if(survey){weapon.visible=false;$('moutHud').classList.add('hidden');api.clearKeys();api.setMode('moutSurvey');setSurveyView('village');}
+    lastClock=clock();m.active=true;document.body.classList.add('mout-active');api.setMode('playing');api.show(null);api.clearKeys();controls(true);$('moutHud').classList.remove('hidden');api.startAudio();build();api.applyQuality?.();updateCamera();renderHud();A.updateArt(0,api.camera,new THREE.Vector3(0,0,-12),api.lights);if(survey){for(const name of ['containers','upper'])$('moutView'+name).classList.toggle('hidden',course==='urban');weapon.visible=false;$('moutHud').classList.add('hidden');api.clearKeys();api.setMode('moutSurvey');setSurveyView('village');}
   }
   function updateCamera(){
     const crouch=api.input().keys.c;api.camera.position.set(position.x,position.y+(crouch?1.05:1.65),position.z);
     const direction=new THREE.Vector3(-Math.sin(look.yaw)*Math.cos(look.pitch),Math.sin(look.pitch),-Math.cos(look.yaw)*Math.cos(look.pitch));
     api.camera.lookAt(api.camera.position.clone().add(direction));api.camera.fov=api.input().keys.k?48:72;api.camera.updateProjectionMatrix();api.camera.updateMatrixWorld();
-    if(weapon){weapon.position.z=-.6+(api.settings?.().reducedMotion?0:flash*.5);weapon.position.y=-.27+(state.reload>0?-.15:0);}
+    if(weapon){const reload=state.reload?Math.sin((1-state.reload/1.4)*Math.PI):0;weapon.rotation.z=api.settings?.().reducedMotion?0:-.55*reload;weapon.position.x=.28+.12*reload;weapon.position.z=-.6+(api.settings?.().reducedMotion?0:flash*.5);weapon.position.y=-.27+(state.reload>0?-.15:0);}
   }
   function fire(){
     if(state.reload||!state.ammo){if(!state.ammo)setNotice('EMPTY · RELOAD / R OR SPACE');return;}
@@ -215,7 +231,7 @@ export function initMout(api){
     const hit=raycaster.intersectObjects([...solids.filter(mesh=>!doors.some(d=>d.mesh===mesh)),...closed,...boards],false)[0];
     const target=hit&&live.find(t=>t.meshes.includes(hit.object));
     recordShot(state,target&&!target.friendly?target.room.id:null,!!target?.friendly);
-    if(target){feedback(target.friendly?'penalty':'hit');$('moutReticle').classList.toggle('confirmed',!target.friendly);target.down=true;for(const mesh of target.meshes)mesh.visible=false;target.marker.visible=false;setNotice(target.friendly?'NO-SHOOT HIT · −250 SCORE':'TARGET DOWN');}
+    if(target){api.tone(target.friendly?180:900,.04,'triangle',.03);feedback(target.friendly?'penalty':'hit');$('moutReticle').classList.toggle('confirmed',!target.friendly);target.down=true;for(const mesh of target.meshes)mesh.visible=false;target.marker.visible=false;setNotice(target.friendly?'NO-SHOOT HIT · −250 SCORE':'TARGET DOWN');}
     else setNotice('MISS / COVER HIT');
     api.tone(70,.055,'sawtooth',.04);flash=.1;cooldown=.22;
   }
@@ -233,12 +249,11 @@ export function initMout(api){
     const length=Math.max(1,Math.hypot(dx,dz));dx/=length;dz/=length;
     const speed=input.keys.c?1.6:input.keys.shift?4.8:3.2;
     const vx=(dx*Math.cos(look.yaw)+dz*Math.sin(look.yaw))*speed*dt,vz=(-dx*Math.sin(look.yaw)+dz*Math.cos(look.yaw))*speed*dt;
-    if(canMove(position.x+vx,position.z,position.y,state.opened))position.x+=vx;
-    if(canMove(position.x,position.z+vz,position.y,state.opened))position.z+=vz;
-    position.y=floorAt(position.x,position.z)??position.y;
-    for(const r of MOUT_ROOMS)if(Math.abs(position.y-r.y)<.3&&position.x*r.side>1.9&&Math.abs(position.z-r.z)<3.7)state.entered.add(r.id);
+    sweepMove(position,vx,vz,canMove,floorAt,state.opened);
+    if(course==='urban'){if(position.z>1&&position.y<.3)state.entered.add('COURTYARD');for(const r of ROOMS)if(urbanEntered(r,position))state.entered.add(r.id);}
+    else for(const r of ROOMS)if(Math.abs(position.y-r.y)<.3&&position.x*r.side>1.9&&Math.abs(position.z-r.z)<3.7)state.entered.add(r.id);
     if(input.edges.e){
-      const door=doors.find(d=>!state.opened.has(d.room.id)&&Math.hypot(position.x-d.room.side*1.5,position.z-d.room.z)<2&&Math.abs(position.y-d.room.y)<.4);
+      const door=doors.find(d=>!state.opened.has(d.room.id)&&Math.hypot(position.x-(d.point?.x??d.room.side*1.5),position.z-(d.point?.z??d.room.z))<2&&Math.abs(position.y-d.room.y)<.4);
       if(door){state.opened.add(door.room.id);door.mesh.visible=false;setNotice(door.room.id+' BREACHED · RED THREATS / BLUE NO-SHOOT');}
       else setNotice('MOVE WITHIN 2M OF A BREACH DOOR');
     }
@@ -249,23 +264,26 @@ export function initMout(api){
     renderHud();
   };
   function renderHud(){
-    const cleared=clearedRooms(state),nearest=doors.find(d=>!state.opened.has(d.room.id)&&Math.hypot(position.x-d.room.side*1.5,position.z-d.room.z)<2&&Math.abs(position.y-d.room.y)<.4);
-    $('moutClock').textContent=stamp(state.elapsed)+' / '+stamp(MOUT_LIMIT);$('moutClock').classList.toggle('urgent',MOUT_LIMIT-state.elapsed<30);$('moutAccuracy').textContent=accuracyFor(state)+'%';
+    const cleared=clearedRooms(state),nearest=doors.find(d=>!state.opened.has(d.room.id)&&Math.hypot(position.x-(d.point?.x??d.room.side*1.5),position.z-(d.point?.z??d.room.z))<2&&Math.abs(position.y-d.room.y)<.4);
+    $('moutClock').textContent=stamp(state.elapsed)+' / '+stamp(limit());$('moutClock').classList.toggle('urgent',limit()-state.elapsed<30);$('moutAccuracy').textContent=accuracyFor(state)+'%';
     $('moutAmmo').textContent=state.reload?'RELOADING':state.ammo+' / '+MOUT_MAGAZINE;
-    $('moutClearance').textContent=cleared.length+' / 6 ROOMS · '+state.hits+' / 12 THREATS';
+    $('moutClearance').textContent=cleared.length+' / '+ROOMS.length+' ZONES · '+state.hits+' / '+ROOMS.length*2+' THREATS';
     $('moutObjective').textContent=state.elapsed<noticeUntil?notice:nearest?'E / BREACH · '+nearest.room.id:cleared.length===6?'ALL CLEAR · UPPER CATWALK EXTRACTION':position.y>2.8?'UPPER DECK · CLEAR A3 / B3':position.z< -16?'RAMP TO UPPER BREACH POINTS':'CLEAR A1 / B1 / A2 / B2 · RED ONLY';
-    $('moutRoomList').textContent=MOUT_ROOMS.map(r=>r.id+': '+(cleared.some(c=>c.id===r.id)?'CLEAR':state.opened.has(r.id)?'OPEN':'SEALED')).join(' · ');
+    const nav=moutNavigation({course,position,lookYaw:look.yaw,rooms:ROOMS,state,cleared});
+    $('moutDirection').textContent=nav.text;drawMoutMap($('moutMap'),{course,position,yaw:look.yaw,rooms:ROOMS,cleared:cleared.map(r=>r.id),opened:[...state.opened],target:nav.target});
+    if(course==='urban')$('moutObjective').textContent=state.elapsed<noticeUntil?notice:nav.text;
+    $('moutRoomList').textContent=ROOMS.map(r=>r.id+': '+(cleared.some(c=>c.id===r.id)?'CLEAR':state.opened.has(r.id)?'OPEN':'SEALED')).join(' · ');
   }
   function finish(){
     unlock();api.clearKeys();api.setMode('moutResult');api.show('moutResult');$('moutHud').classList.add('hidden');
-    const medal=recordCareer({mode:'mout',success:state.success,accuracy:accuracyFor(state),penalties:state.penalties});
+    const medal=course==='urban'?{fresh:[],saved:true}:recordCareer({mode:'mout',success:state.success,accuracy:accuracyFor(state),penalties:state.penalties});
     $('moutAnalysis').textContent=afterAction({mode:'mout',...state})+(medal.fresh.length?' · Clean Breach cosmetic earned'+(medal.saved?' locally.':' (not saved; storage unavailable).'):'');
     $('moutResultTitle').textContent=state.success?'EXTRACTION COMPLETE':'TIME EXPIRED';
-    $('moutResultSummary').textContent=clearedRooms(state).length+' / 6 rooms · '+state.hits+' / 12 threats · '+state.penalties+' no-shoot hits';
-    const result=saveDrillRecord({success:state.success,score:drillScore(state),time:state.elapsed,accuracy:accuracyFor(state)});
+    $('moutResultSummary').textContent=(course==='urban'?'URBAN BLOCK · ':'CONTAINER LANE · ')+clearedRooms(state).length+' / '+ROOMS.length+' zones · '+state.hits+' / '+ROOMS.length*2+' threats · '+state.penalties+' no-shoot hits';
+    const result=course==='urban'?saveUrbanRecord(state,drillScore(state)):saveDrillRecord({success:state.success,score:drillScore(state),time:state.elapsed,accuracy:accuracyFor(state)});
     $('moutRecordStatus').textContent=!result.eligible?'Extraction incomplete · personal best unchanged.':!result.saved?'Storage unavailable · result was not saved.':result.best?'NEW PERSONAL BEST · saved on this device.':'Personal best preserved on this device.';
     $('moutResultStats').textContent='Clearance '+state.elapsed.toFixed(2)+'s · Accuracy '+accuracyFor(state)+'% ('+state.hits+'/'+state.shots+') · Drill score '+drillScore(state);
   }
-  m.text=()=>({survey,surveyView:survey?surveyView:null,kind:'mout',name:'MOUT Shoot House',...position,elapsed:+state.elapsed.toFixed(2),limit:MOUT_LIMIT,shots:state.shots,hits:state.hits,accuracy:accuracyFor(state),ammo:state.ammo,reload:state.reload,penalties:state.penalties,cleared:clearedRooms(state).map(r=>r.id),opened:[...state.opened],ended:state.ended,success:state.success,score:drillScore(state)});
+  m.text=()=>({course,survey,surveyView:survey?surveyView:null,kind:'mout',name:course==='urban'?'MOUT Urban Block':'MOUT Shoot House',...position,elapsed:+state.elapsed.toFixed(2),limit:limit(),shots:state.shots,hits:state.hits,accuracy:accuracyFor(state),ammo:state.ammo,reload:state.reload,penalties:state.penalties,cleared:clearedRooms(state).map(r=>r.id),opened:[...state.opened],ended:state.ended,success:state.success,score:drillScore(state)});
   return m;
 }

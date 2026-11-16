@@ -1,3 +1,4 @@
+import {afterAction} from './career.js';
 import {styleFor} from './avatar-styles.js';
 import {bestRace,saveRace,ghostAt} from './field-records.js';
 import {createRaceCourses} from './race-courses.js';
@@ -309,6 +310,7 @@ export function initRace(api){
   }
   function drawResults(){
     const list=entries(),own=list.find(e=>e.type==='YOU'),rank=own.place;
+    $('raceAnalysis').textContent=afterAction({mode:'race',...api.state().runStats,success:r.finished});
     $('raceResultTitle').textContent=own.disqualified?'DISQUALIFIED':rank===1?'MISSION: FIRST PLACE':'QUALIFIED';
     $('raceResultText').textContent=courses[r.course].name+' · '+RACE_DURATION.toFixed(2)+'-second round · You placed '+rank+' of '+list.length+'. Bottom '+RACE_DISQUALIFIED+' disqualified.';
     $('raceResults').innerHTML=list.map((e,i)=>`<div class="result-racer ${e.disqualified?'is-disqualified':''} ${e.type==='YOU'?'is-you':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${escape(e.name)}<small>${e.type} · ${e.disqualified?'DISQUALIFIED':'QUALIFIED'}</small></span><strong>${e.finish!==null?e.finish.toFixed(2)+'s':Math.floor(e.progress*100)+'% / DNF'}</strong></div>`).join('');

@@ -1,3 +1,4 @@
+import {cosmeticUnlocked} from './career.js';
 // Free, browser-local appearance variants. These are not cloud inventory IDs.
 export const STYLE_PALETTES=[
   {id:'forest',name:'Forest',base:'#304c36',accent:'#b8d483'},
@@ -29,17 +30,22 @@ export const STYLE_PATTERNS=[
 export const JESTER_STYLE={id:'level29-jester',name:'Level 29 / Jester Mascot',
   palette:{id:'signature',name:'Signature',base:'#8500a8',accent:'#ffc400'},
   pattern:{id:'jester',name:'Jester Mascot',kind:'jester',category:'Mascots',material:'Velvet'}};
-export const AVATAR_STYLES=[JESTER_STYLE,...STYLE_PALETTES.flatMap(palette=>STYLE_PATTERNS.map(pattern=>({
+export const EARNED_STYLES=[
+  {id:'earned-veteran',name:'Veteran / Gold Braid',unlock:'graduate',palette:{id:'earned',name:'Earned',base:'#314139',accent:'#d8ba60'},pattern:{id:'veteran',kind:'boonie',category:'Hats',material:'Canvas'}},
+  {id:'earned-breach',name:'Clean Breach / Ice Cap',unlock:'clean',palette:{id:'earned',name:'Earned',base:'#244257',accent:'#b9e9f1'},pattern:{id:'breach',kind:'cap',category:'Caps',material:'Canvas'}},
+  {id:'earned-support',name:'Squad Backbone / Rescue Hoodie',unlock:'team',palette:{id:'earned',name:'Earned',base:'#692e34',accent:'#e8cf97'},pattern:{id:'support',kind:'hoodie',category:'Hoodies',material:'Fleece'}}
+];
+export const AVATAR_STYLES=[...EARNED_STYLES,JESTER_STYLE,...STYLE_PALETTES.flatMap(palette=>STYLE_PATTERNS.map(pattern=>({
   id:palette.id+'-'+pattern.id,name:palette.name+' / '+pattern.name,palette,pattern
 })))];
 export const STYLE_CATEGORIES=[...new Set(STYLE_PATTERNS.map(p=>p.category))];
 const KEY='b29:avatar-style:v1';
 export const styleFor=id=>AVATAR_STYLES.find(style=>style.id===id)||null;
 let selected=null;
-try{selected=styleFor(localStorage.getItem(KEY))?.id||null;}catch{}
+try{const id=styleFor(localStorage.getItem(KEY))?.id;selected=id&&cosmeticUnlocked(id)?id:null;}catch{}
 export const selectedStyle=()=>selected;
 export function selectStyle(id){
-  if(id!==null&&!styleFor(id))return {ok:false,saved:false};
+  if(id!==null&&(!styleFor(id)||!cosmeticUnlocked(id)))return {ok:false,saved:false};
   selected=id;
   try{
     if(id===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,id);

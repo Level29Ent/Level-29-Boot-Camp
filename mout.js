@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {afterAction,recordCareer} from './career.js';
 import {bestDrill,saveDrillRecord} from './field-records.js';
 import {feedback} from './presentation.js';
 import * as A from './art.js';
@@ -220,6 +221,8 @@ export function initMout(api){
   }
   function finish(){
     unlock();api.clearKeys();api.setMode('moutResult');api.show('moutResult');$('moutHud').classList.add('hidden');
+    const medal=recordCareer({mode:'mout',success:state.success,accuracy:accuracyFor(state),penalties:state.penalties});
+    $('moutAnalysis').textContent=afterAction({mode:'mout',...state})+(medal.fresh.length?' · Clean Breach cosmetic earned'+(medal.saved?' locally.':' (not saved; storage unavailable).'):'');
     $('moutResultTitle').textContent=state.success?'EXTRACTION COMPLETE':'TIME EXPIRED';
     $('moutResultSummary').textContent=clearedRooms(state).length+' / 6 rooms · '+state.hits+' / 12 threats · '+state.penalties+' no-shoot hits';
     const result=saveDrillRecord({success:state.success,score:drillScore(state),time:state.elapsed,accuracy:accuracyFor(state)});

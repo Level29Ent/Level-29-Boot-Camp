@@ -23,3 +23,13 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .reduced-motion *, .reduced-motion *::before,.reduced-motion *::after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}
 @media(prefers-reduced-motion:reduce){#fieldFeedback.pulse{animation:none}}
 @media(max-width:600px){#fieldSettingsButton{font-size:10px;right:8px;top:8px}body.war-active #fieldSettingsButton,body.mout-active #fieldSettingsButton{right:130px;bottom:8px}#fieldSettings{padding:8px}.sheet{border-top-width:2px}}
+#squadCommands{position:absolute;left:16px;bottom:260px;max-width:300px;pointer-events:auto;background:#101c20e8;padding:10px;border-left:3px solid #d4bb70}
+#squadCommands small{display:block;color:#e4d29e;font-size:11px;margin-bottom:8px}
+#squadCommands div{display:flex;gap:6px;flex-wrap:wrap}
+#squadCommands button{padding:8px;background:#263b39;color:#f3e8cb;border:1px solid #849786;min-height:38px;cursor:pointer}
+#squadCommands button:disabled{opacity:.45;cursor:default}
+#careerMedals{line-height:1.7;border-left:3px solid #bda45d;padding:12px}
+#dailyTrainingList{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:20px 0}
+@media(max-width:700px){#squadCommands{bottom:345px;left:10px;max-width:230px;padding:7px}#squadCommands button{font-size:11px;padding:6px;min-height:36px}#fieldSettings .sheet{padding:18px}#fieldSettings label{margin:12px 0}#fieldSettings .sheet-title{font-size:34px}}
+@media(max-height:500px){#squadCommands{left:auto;right:10px;bottom:180px;max-width:220px}#fieldSettings{display:block}#fieldSettings .sheet{margin:auto}#fieldSettings label{margin:10px 0}}
+#fieldSettings .sheet{max-height:calc(100dvh - 36px);overflow-y:auto}

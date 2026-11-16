@@ -1,10 +1,11 @@
+import {botPlan,setSquadOrder,objectiveActivity} from '../../../squad-tactics.js';
 import {COSMETICS,ACHIEVEMENTS,dailyChallenges,dayKey,WAR_COVER} from '../../../rules.js';
 import {AVATAR_STYLES} from '../../../avatar-styles.js';
-import {createObjective,stepObjective,useRole,objectiveDestination,OPERATIONS,ROLES,CRUCIBLE_HURDLES} from '../../../operations.js';
+import {createObjective,stepObjective,useRole,OPERATIONS,ROLES,CRUCIBLE_HURDLES} from '../../../operations.js';
 export const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 export const finite=(value,min,max,fallback=0)=>Number.isFinite(value)?Math.max(min,Math.min(max,value)):fallback;
 export function callsign(value){if(typeof value!=='string'||!value.trim()||value.trim().length>18)fail('Enter a callsign between 1 and 18 characters.');return value.trim();}
-export function appearance(value){if(value===null)return null;if(!AVATAR_STYLES.some(s=>s.id===value))fail('Unknown appearance.');return value;}
+export function appearance(value){if(value===null)return null;if(!AVATAR_STYLES.some(s=>s.id===value&&!s.unlock))fail('Unknown appearance.');return value;}
 export function newProfile(id,name){return {id,name:callsign(name),cash:0,xp:0,equipped:'recruit',style:null,inventory:['recruit'],stats:{},daily:{},claims:[]};}
 export function profileAction(p,action,payload,time){
   if(action==='profile')return;
@@ -48,7 +49,7 @@ export function createRoom(code,profile,kind,payload,time){
   if(kind==='war'&&payload.mode==='pvp'&&['crucible','escort'].includes(operation))fail('Squad Crucible and supply escort are co-op missions. Choose elimination, capture zone or intel for PvP.');
   const role=Object.hasOwn(ROLES,payload.role)?payload.role:'rifleman';
   return {code,kind,listed:payload.public===true,mode:kind==='war'?(payload.mode==='pvp'?'pvp':'pve'):'race',host:profile.id,
-    course:Math.floor(finite(payload.course,0,99)),objective:createObjective(operation),players:[participant({...profile,role},0)],
+    orders:{},course:Math.floor(finite(payload.course,0,99)),objective:createObjective(operation),players:[participant({...profile,role},0)],
     startsAt:null,endedAt:null,scores:{blue:0,red:0},events:[],eventId:0,lastTick:time,createdAt:time};
 }
 export function joinRoom(room,profile,kind,role='rifleman'){
@@ -119,6 +120,7 @@ export function acceptInput(room,id,input,time){
   p.connected=true;
   if(room.kind!=='war'||room.endedAt||!room.startsAt||!Number.isSafeInteger(input.seq)||input.seq<=p.seq)return;
   p.seq=input.seq;p.inputAt=time;
+  if(input.order)setSquadOrder(room,p,input.order,time);
   p.input={dx:finite(input.dx,-1,1),dz:finite(input.dz,-1,1),yaw:finite(input.yaw,-1000,1000),pitch:finite(input.pitch,-1.4,1.4),
     fire:input.fire===true,jump:input.jump===true,reload:input.reload===true,crouch:input.crouch===true,sprint:input.sprint===true,ability:input.ability===true};
 }
@@ -134,13 +136,11 @@ export function tickRoom(room,time){
       if(p.hp<=0){if(cursor<p.respawnAt)continue;p.hp=100;p.ammo=30;p.reloadAt=0;p.x=(p.slot%5-2)*3;p.z=p.team==='blue'?27:-27;p.y=0;p.velocity=0;}
       if(p.reloadAt&&cursor>=p.reloadAt){p.reloadAt=0;p.ammo=30;}
       if(p.bot){
-        const enemy=room.players.filter(q=>q.team!==p.team&&q.hp>0).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0];
-        if(!enemy)continue;
-        const dist=Math.hypot(enemy.x-p.x,enemy.z-p.z);p.yaw=Math.atan2(p.x-enemy.x,p.z-enemy.z);
-        shoot(room,p,p.yaw,Math.atan2(enemy.y+.9-(p.y+1.65),dist),cursor);
-        const objective=room.objective.id!=='elimination'&&(room.objective.id!=='crucible'||p.team==='blue'&&room.objective.stage!==2);
-        const goal=objective?objectiveDestination(room.objective,p,room.players):enemy;
-        if(!p.route||cursor>p.routeAt){p.route=botDirection(p,goal);p.routeAt=cursor+700;}
+        const plan=botPlan(room,p,cursor);p.behavior=plan.behavior;
+        if(plan.reload&&!p.reloadAt&&p.ammo<30)p.reloadAt=cursor+1400;
+        const enemy=plan.enemy;
+        if(enemy){const dist=Math.hypot(enemy.x-p.x,enemy.z-p.z);p.yaw=Math.atan2(p.x-enemy.x,p.z-enemy.z);if(plan.fire)shoot(room,p,p.yaw,Math.atan2(enemy.y+.9-(p.y+1.65),dist),cursor);}
+        if(!p.route||cursor>p.routeAt){p.route=botDirection(p,plan.goal);p.routeAt=cursor+700;}
         move(room,p,p.route.dx,p.route.dz,3,dt);
       }else{
         const input=cursor-p.inputAt<500?p.input:{};
@@ -154,6 +154,7 @@ export function tickRoom(room,time){
         if(input.fire)shoot(room,p,p.yaw,input.pitch||0,cursor);
       }
     }
+    objectiveActivity(room,dt);
     stepObjective(room.objective,room.players,room.scores,dt);
     if(room.objective.won||room.objective.id==='elimination'&&Math.max(room.scores.blue,room.scores.red)>=30){room.endedAt=cursor;break;}
   }
@@ -163,8 +164,8 @@ export function tickRoom(room,time){
 export function publicRoom(room,id,time){
   const player=room.players.find(p=>p.id===id&&!p.bot);if(!player)fail('Join this room first.',403);
   return {nextSeq:player.seq+1,code:room.code,kind:room.kind,mode:room.mode,host:room.host,me:id,course:room.course,startsAt:room.startsAt,endedAt:room.endedAt,
-    elapsed:room.startsAt===null?null:(Math.min(time,room.endedAt||time)-room.startsAt)/1000,serverNow:time,objective:room.objective,scores:room.scores,events:room.events,
-    players:room.players.map(p=>{const {input,inputAt,shotAt,active,route,routeAt,velocity,seq,...safe}=p;return {...safe,...(p.id!==id?{revealUntil:undefined}:{})};})};
+    elapsed:room.startsAt===null?null:(Math.min(time,room.endedAt||time)-room.startsAt)/1000,serverNow:time,orders:room.orders,objective:room.objective,scores:room.scores,events:room.events,
+    players:room.players.map(p=>{const {input,inputAt,shotAt,active,route,routeAt,velocity,seq,memory,...safe}=p;return {...safe,...(p.id!==id?{revealUntil:undefined}:{})};})};
 }
 export function settle(p,room,time){
   if(!room.endedAt||room.kind!=='war')return;

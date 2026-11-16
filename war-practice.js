@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import {createObjective,stepObjective,objectiveDestination,useRole,CRUCIBLE_HURDLES} from './operations.js';
+import {botPlan,setSquadOrder,objectiveActivity} from './squad-tactics.js';
+import {createObjective,stepObjective,useRole,CRUCIBLE_HURDLES} from './operations.js';
 import {WAR_COVER,WAR_DURATION,WAR_TARGET} from './rules.js';
 
 const blocked=(x,z)=>Math.abs(x)>22||Math.abs(z)>32||WAR_COVER.some(c=>Math.abs(x-c.x)<c.w/2+.5&&Math.abs(z-c.z)<c.d/2+.5);
@@ -24,7 +25,7 @@ function pathTo(a,b){
 export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,equipped='recruit',xp,operation='elimination',role='rifleman'}={}){
   let last=now(),eventId=0,ended=false,botClock=0;
   const state={code:'LOCAL',kind:'war',mode:'practice',me:'local-you',host:'local-you',startsAt:now()+3000,endedAt:null,
-    objective:createObjective(operation),serverNow:now(),scores:{blue:0,red:0},events:[],players:[]};
+    orders:{},objective:createObjective(operation),serverNow:now(),scores:{blue:0,red:0},events:[],players:[]};
   const extra=new Map();
   function spawn(p){p.x=(p.slot%5-2)*3;p.y=0;p.z=p.team==='blue'?27:-27;p.yaw=p.team==='blue'?0:Math.PI;p.hp=100;p.ammo=30;p.reloadAt=0;p.respawnAt=0;p.crouch=false;p.moving=false;extra.set(p.id,{cooldown:0,route:[],velocity:0});}
   for(let i=0;i<10;i++){
@@ -64,6 +65,7 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
   }
   function step(input,dt,time){
     if(ended||time<state.startsAt)return;
+    if(input.order)setSquadOrder(state,self(),input.order,time);
     for(const p of state.players){
       const info=extra.get(p.id);info.cooldown=Math.max(0,info.cooldown-dt);
       if(p.hp<=0){if(time>=p.respawnAt)spawn(p);else continue;}
@@ -77,26 +79,17 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
         if(input.ability)useRole(p,state.players,time);
         if(input.fire)fire(p,p.yaw,input.pitch||0,time);
       }else{
-        const enemies=state.players.filter(q=>q.team!==p.team&&q.hp>0).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
-        const enemy=enemies[0];if(!enemy)continue;
-        const objective=state.objective;
-        const pursuing=objective.id!=='elimination'&&(objective.id!=='crucible'||(p.team==='blue'&&objective.stage!==2));
-        const destination=pursuing?objectiveDestination(objective,p,state.players):enemy;
-        const dx=enemy.x-p.x,dz=enemy.z-p.z,dist=Math.hypot(dx,dz);p.yaw=Math.atan2(-dx,-dz);
-        const origin=new THREE.Vector3(p.x,1.65,p.z),direction=new THREE.Vector3(dx,-.3,dz).normalize(),sight=targetFor(new THREE.Ray(origin,direction),p);
-        if(sight.target?.team!==p.team&&sight.target){
-          p.moving=false;
-          const spread=(random()-.5)*.08;
-          fire(p,p.yaw+spread,Math.atan2(-.3,dist)+spread*.25,time);
-        }
-        if(pursuing||!sight.target||sight.target.team===p.team){
-          if(Math.hypot(destination.x-p.x,destination.z-p.z)<2){p.moving=false;continue;}
-          if(!info.route.length||botClock<=0)info.route=pathTo(p,destination);
-          const waypoint=info.route[0];if(waypoint){const x=waypoint.x-p.x,z=waypoint.z-p.z;if(Math.hypot(x,z)<.25)info.route.shift();else advance(p,x,z,3,dt);}
-        }
+        const plan=botPlan(state,p,time),enemy=plan.enemy,destination=plan.goal;p.behavior=plan.behavior;
+        if(plan.reload&&!p.reloadAt&&p.ammo<30)p.reloadAt=time+1400;
+        if(enemy){const dx=enemy.x-p.x,dz=enemy.z-p.z,dist=Math.hypot(dx,dz);p.yaw=Math.atan2(-dx,-dz);if(plan.fire){const spread=(random()-.5)*.08;fire(p,p.yaw+spread,Math.atan2(-.3,dist),time);}}
+        if(Math.hypot(destination.x-p.x,destination.z-p.z)<1.8){p.moving=false;continue;}
+        if(!info.route.length||botClock<=0)info.route=pathTo(p,destination);
+        const waypoint=info.route[0];if(waypoint){const x=waypoint.x-p.x,z=waypoint.z-p.z;if(Math.hypot(x,z)<.25)info.route.shift();else advance(p,x,z,3,dt);}
+
       }
     }
     botClock-=dt;if(botClock< -dt)botClock=1;
+    objectiveActivity(state,dt);
     stepObjective(state.objective,state.players,state.scores,dt);
     if(time-state.startsAt>=WAR_DURATION*1000||state.objective.won||(state.objective.id==='elimination'&&(state.scores.blue>=WAR_TARGET||state.scores.red>=WAR_TARGET))){state.endedAt=time;ended=true;}
     state.events=state.events.slice(-50);

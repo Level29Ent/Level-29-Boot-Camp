@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {sanitizeSettings,loadSettings,saveSettings,qualityProfile,trainingBest,createJumpAssist} from '../game-feel.js';
 import {createDrill,tickDrill,recordShot,extractDrill,MOUT_ROOMS,canMove,floorAt} from '../mout-rules.js';
 test('graphics settings bound sensitivity and recover from corrupt or denied storage',()=>{
-  assert.deepEqual(sanitizeSettings({quality:'ultra',sensitivity:99}),{quality:'balanced',sensitivity:2,reducedMotion:false});
+  assert.deepEqual(sanitizeSettings({quality:'ultra',sensitivity:99}),{quality:'balanced',sensitivity:2,reducedMotion:false,environment:'auto'});
   assert.deepEqual(loadSettings({getItem:()=>'{bad'}),sanitizeSettings());assert.deepEqual(loadSettings({getItem:()=>null}),sanitizeSettings());
   assert.equal(saveSettings({}, {setItem(){throw Error('denied')}}),false);
   assert.deepEqual(qualityProfile('performance',3),{ratio:1,shadows:false,mapSize:512});assert.equal(qualityProfile('high',3).ratio,2);

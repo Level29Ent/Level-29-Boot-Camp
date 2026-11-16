@@ -87,7 +87,7 @@
       <p class="tagline">Race. Fight. Earn your stripes.<br>100 courses · 5v5 war · daily field cash.</p>
       <div class="profile-strip"><span id="titleRank">RECRUIT</span><span id="titleWallet">CLOUD PLAYER DOSSIER</span><button id="profileShortcut">Save name / play</button></div>
       <div class="menu">
-        <button class="btn primary" id="btnWar">5v5 War</button>
+        <button class="btn primary" id="btnGuided">Guided First Mission</button><button class="btn" id="btnDailyTraining">Daily Training</button><button class="btn primary" id="btnWar">5v5 War</button>
         <button class="btn" id="btnMout">MOUT Shoot House</button>
         <button class="btn" id="btnRace">60-Second Races</button>
         <button class="btn" id="btnCommand">Command & Rewards</button>
@@ -99,6 +99,7 @@
     </div>
   </section>
 
+  <section id="dailyTraining" class="screen hidden"><div class="sheet command-sheet"><div class="brief-phase">DAILY TRAINING / DEVICE-LOCAL</div><h2 class="sheet-title">TODAY’S ORDERS</h2><p id="dailyTrainingDate" class="race-fine"></p><label class="remember-choice"><input id="dailyModifiers" type="checkbox" checked> Enable optional difficulty modifiers</label><p class="race-fine">Replay existing training with new goals. Daily runs do not overwrite campaign records. Progress resets with the UTC date and stays on this device.</p><div id="dailyTrainingList" class="command-grid"></div><button id="dailyTrainingBack" class="btn">Back to base</button></div></section>
   <section id="moutBrief" class="screen hidden">
     <div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL TACTICAL TRAINING / SOLO TARGET DRILL</div>
       <h2 class="sheet-title">MOUT<br>SHOOT HOUSE</h2>
@@ -109,7 +110,7 @@
     </div>
   </section>
   <section id="moutPause" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL DRILL PAUSED / CLOCK STOPPED</div><h2 class="sheet-title">HOLD POSITION</h2><div class="menu"><button id="moutResume" class="btn primary">Resume drill</button><button id="moutAbort" class="btn">Abort to base</button></div></div></section>
-  <section id="moutResult" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">MOUT / AFTER-ACTION REPORT</div><h2 id="moutResultTitle" class="sheet-title">EXTRACTION COMPLETE</h2><p id="moutResultSummary" class="brief-text"></p><p id="moutResultStats" class="brief-text"></p><p id="moutRecordStatus" class="race-fine" role="status"></p><p class="race-fine">Accuracy = threat hits / shots fired. Drill score rewards threats, accuracy and time remaining; each no-shoot hit deducts 250 points. Practice only · personal bests save on this device.</p><div class="menu row"><button id="moutRetry" class="btn primary">Run drill again</button><button id="moutResultBack" class="btn">Back to base</button></div></div></section>
+  <section id="moutResult" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">MOUT / AFTER-ACTION REPORT</div><h2 id="moutResultTitle" class="sheet-title">EXTRACTION COMPLETE</h2><p id="moutResultSummary" class="brief-text"></p><p id="moutResultStats" class="brief-text"></p><p id="moutAnalysis" class="race-fine"></p><p id="moutRecordStatus" class="race-fine" role="status"></p><p class="race-fine">Accuracy = threat hits / shots fired. Drill score rewards threats, accuracy and time remaining; each no-shoot hit deducts 250 points. Practice only · personal bests save on this device.</p><div class="menu row"><button id="moutRetry" class="btn primary">Run drill again</button><button id="moutResultBack" class="btn">Back to base</button></div></div></section>
   <aside id="moutHud" class="hidden" aria-label="Shoot house tactical HUD">
     <div class="mout-top"><div><small>CLEARANCE TIME</small><strong id="moutClock">0:00 / 3:00</strong></div><div><small>ACCURACY</small><strong id="moutAccuracy">0%</strong></div><div><small>MAGAZINE</small><strong id="moutAmmo">12 / 12</strong></div><button id="moutPauseButton">Pause drill</button></div>
     <div class="mout-mission"><b id="moutClearance"></b><p id="moutObjective" role="status" aria-live="polite"></p><small id="moutRoomList"></small></div>
@@ -119,11 +120,11 @@
   <section id="service" class="screen hidden">
     <div class="sheet command-sheet">
       <div class="brief-phase">LEVEL 29 / RANKS & AVATAR KITS</div>
-      <h2 class="sheet-title">121 WAYS TO STAND OUT.</h2>
-      <p class="brief-text">Featured Level 29 Jester Mascot plus 12 palettes × 10 real 3D wearable designs: hats, caps, hair, shirts, hoodies and mascots. Free visual styles for your next race, training session or third-person War match. No stat boosts.</p>
+      <h2 class="sheet-title">124 WAYS TO STAND OUT.</h2>
+      <p class="brief-text">Featured Level 29 Jester Mascot plus three earnable local medal cosmetics and 12 palettes × 10 real 3D wearable designs: hats, caps, hair, shirts, hoodies and mascots. Free visual styles for your next race, training session or third-person War match. No stat boosts.</p>
       <p class="race-fine">Guests save styles in this browser only. Signed-in players can select a style to save it online for their next deployment; guests keep local-only styles. Your rank and owned kits stay unchanged.</p>
       <div class="wardrobe-stage"><canvas id="wardrobeCanvas" aria-label="Rotating 3D clothing and material preview"></canvas><p id="wardrobeLabel" aria-live="polite">Select View in 3D to inspect a wearable.</p><button class="btn" id="wardrobeRotate">Pause rotation</button></div>
-      <p id="avatarSelected" class="race-fine"></p>
+      <p id="careerMedals" class="race-fine"></p><p id="avatarSelected" class="race-fine"></p>
       <label class="race-label" for="avatarPalette">FILTER BY PALETTE</label><select id="avatarPalette"></select>
       <label class="race-label" for="avatarCategory">CLOTHING TYPE</label><select id="avatarCategory"></select>
       <div class="avatar-pagination"><button id="avatarPrev" class="btn">Previous styles</button><span id="avatarPage" aria-live="polite"></span><button id="avatarNext" class="btn">Next styles</button></div>
@@ -192,7 +193,7 @@
       <div class="brief-phase" id="resPhase"></div>
       <h2 class="sheet-title" id="resTitle">Level Complete</h2>
       <p class="brief-text" id="resText"></p>
-      <div class="stats" id="resStats"></div>
+      <p id="resAnalysis" class="brief-text"></p><div class="stats" id="resStats"></div>
       <div class="menu row">
         <button class="btn primary" id="btnNext">Next Level</button>
         <button class="btn" id="btnRetry">Retry</button>
@@ -268,7 +269,7 @@
     <div class="sheet narrow">
       <div class="brief-phase">AFTER-ACTION REPORT / 60 SECONDS</div>
       <h2 class="sheet-title" id="raceResultTitle">RACE COMPLETE</h2>
-      <p id="raceResultText" class="brief-text"></p><p id="raceRewardText" class="race-fine" role="status"></p><p id="raceRecordReport" class="race-fine" role="status"></p><button id="raceRetryCourse" class="btn">Retry this course / race your ghost</button><div id="raceResults"></div>
+      <p id="raceResultText" class="brief-text"></p><p id="raceRewardText" class="race-fine" role="status"></p><p id="raceAnalysis" class="race-fine"></p><p id="raceRecordReport" class="race-fine" role="status"></p><button id="raceRetryCourse" class="btn">Retry this course / race your ghost</button><div id="raceResults"></div>
       <div class="menu row"><button class="btn primary" id="raceAgain">Next shuffled race</button><button class="btn" id="raceQuit">Title</button></div>
     </div>
   </section>
@@ -303,7 +304,7 @@
     <div class="sheet narrow"><div class="brief-phase">LIVE OPERATION</div><h2 class="sheet-title" id="warExitHeading">YOUR SQUAD IS STILL FIGHTING</h2><p class="brief-text" id="warExitNote">Online matches do not pause. Return to the fight or leave this operation.</p><div class="menu"><button class="btn primary" id="warStay">Back to the fight</button><button class="btn" id="warLeaveConfirm">Leave match</button></div></div>
   </section>
   <section id="warResult" class="screen hidden">
-    <div class="sheet narrow"><div class="brief-phase">5v5 / AFTER-ACTION REPORT</div><h2 class="sheet-title" id="warResultHeading">SQUAD VICTORY</h2><p id="warResultSummary" class="brief-text"></p><p id="warRewardText" class="race-fine" role="status"></p><p id="warDrillReport" class="race-fine"></p><div id="warResultRoster"></div><div class="menu row"><button id="warAgain" class="btn primary">Redeploy</button><button id="warResultCommand" class="btn">Collect rewards</button><button id="warResultTitleBack" class="btn">Base</button></div></div>
+    <div class="sheet narrow"><div class="brief-phase">5v5 / AFTER-ACTION REPORT</div><h2 class="sheet-title" id="warResultHeading">SQUAD VICTORY</h2><p id="warResultSummary" class="brief-text"></p><p id="warRewardText" class="race-fine" role="status"></p><p id="warAnalysis" class="race-fine"></p><p id="warDrillReport" class="race-fine"></p><div id="warResultRoster"></div><div class="menu row"><button id="warAgain" class="btn primary">Redeploy</button><button id="warResultCommand" class="btn">Collect rewards</button><button id="warResultTitleBack" class="btn">Base</button></div></div>
   </section>
   <div id="warHud" class="hidden">
     <div class="war-top"><div class="war-team-score blue"><span>ALPHA</span><strong id="blueScore">0</strong></div><div class="war-clock"><strong id="warTimer">3:00</strong><small id="warWinRule">FIRST TO 30</small></div><div class="war-team-score red"><strong id="redScore">0</strong><span>BRAVO</span></div></div>
@@ -311,7 +312,7 @@
     <canvas id="warRadar" width="192" height="224" aria-label="Battlefield radar: blue allies, red enemies, gold player"></canvas>
     <div id="operationStatus" role="status"></div><button id="roleAbility" class="hidden">F / ABILITY</button><div id="warKillfeed"></div><div id="warReticle"></div>
     <div class="war-vitals"><div><small>HEALTH</small><strong id="warHealth">100</strong><div class="war-hp-track"><i id="warHealthBar"></i></div></div><div><small>RIFLE / AMMO</small><strong id="warAmmo">30 / 30</strong></div><div id="warPersonalScore">0 ELIMS / 0 DEATHS</div></div>
-    <div id="warControlsHint">WASD / joystick move · Drag aim<br>J / mouse fire · E / R reload · K zoom<br>Space jump · C crouch · Shift sprint</div>
+    <div id="squadCommands"><small id="squadOrderStatus"></small><div><button id="squadFollow">1 · Follow</button><button id="squadHold">2 · Hold here</button><button id="squadPush">3 · Push objective</button></div></div><div id="warControlsHint">WASD / joystick move · Drag aim<br>J / mouse fire · E / R reload · K zoom<br>Space jump · C crouch · Shift sprint</div>
     <div id="warCountdown" class="hidden">3</div>
     <div id="warRespawn" class="hidden"><strong>REGROUPING</strong><p>Back in the fight in <b id="warRespawnTime">3</b></p></div>
   </div>

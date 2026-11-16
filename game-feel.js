@@ -1,7 +1,7 @@
-export const DEFAULT_SETTINGS={quality:'balanced',sensitivity:1,reducedMotion:false};
+export const DEFAULT_SETTINGS={quality:'balanced',sensitivity:1,reducedMotion:false,environment:'auto'};
 export function sanitizeSettings(value={}){
   return {quality:['performance','balanced','high'].includes(value?.quality)?value.quality:'balanced',
-    sensitivity:Number.isFinite(value?.sensitivity)?Math.max(.4,Math.min(2,value.sensitivity)):1,reducedMotion:value?.reducedMotion===true};
+    sensitivity:Number.isFinite(value?.sensitivity)?Math.max(.4,Math.min(2,value.sensitivity)):1,reducedMotion:value?.reducedMotion===true,environment:['auto','woodland','coastal','night'].includes(value?.environment)?value.environment:'auto'};
 }
 export function loadSettings(storage){try{return sanitizeSettings(JSON.parse((storage??globalThis.localStorage).getItem('b29:settings:v1')));}catch{return {...DEFAULT_SETTINGS};}}
 export function saveSettings(value,storage){try{(storage??globalThis.localStorage).setItem('b29:settings:v1',JSON.stringify(sanitizeSettings(value)));return true;}catch{return false;}}

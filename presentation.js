@@ -1,12 +1,13 @@
 import * as THREE from 'three';
+import * as A from './art.js';
 import {loadSettings,saveSettings,qualityProfile} from './game-feel.js';
 export function initPresentation({renderer,lights,refresh}){
   const settings=loadSettings(),panel=document.createElement('section');panel.id='fieldSettings';panel.className='hidden';
   panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','fieldSettingsTitle');
-  panel.innerHTML='<div class="sheet narrow"><div class="brief-phase">FIELD OPTIONS</div><h2 id="fieldSettingsTitle" class="sheet-title">MAKE IT YOURS</h2><label>Graphics<select id="graphicsQuality"><option value="performance">Performance · no shadows</option><option value="balanced">Balanced · soft shadows</option><option value="high">High · sharper resolution / shadows</option></select></label><label>Look sensitivity<input id="lookSensitivity" type="range" min="0.4" max="2" step="0.1"><output id="sensitivityValue"></output></label><label class="remember-choice"><input id="reduceMotion" type="checkbox"> Reduce camera effects & motion</label><p id="fieldSettingsStatus" role="status"></p><button id="closeFieldSettings" class="btn primary">Close options</button></div>';
+  panel.innerHTML='<div class="sheet narrow"><div class="brief-phase">FIELD OPTIONS</div><h2 id="fieldSettingsTitle" class="sheet-title">MAKE IT YOURS</h2><label>Graphics<select id="graphicsQuality"><option value="performance">Performance · no shadows</option><option value="balanced">Balanced · soft shadows</option><option value="high">High · sharper resolution / shadows</option></select></label><label>Environment (next campaign / War deployment)<select id="fieldEnvironment"><option value="auto">Original course environment</option><option value="woodland">Rain-soaked woodland</option><option value="coastal">Coastal training ground</option><option value="night">Floodlit night course</option></select></label><label>Look sensitivity<input id="lookSensitivity" type="range" min="0.4" max="2" step="0.1"><output id="sensitivityValue"></output></label><label class="remember-choice"><input id="reduceMotion" type="checkbox"> Reduce camera effects & motion</label><p id="fieldSettingsStatus" role="status"></p><button id="closeFieldSettings" class="btn primary">Close options</button></div>';
   document.getElementById('app').appendChild(panel);
   const button=document.createElement('button');button.id='fieldSettingsButton';button.className='global-button';button.textContent='OPTIONS';button.setAttribute('aria-controls','fieldSettings');document.getElementById('app').appendChild(button);
-  const quality=panel.querySelector('#graphicsQuality'),sensitivity=panel.querySelector('#lookSensitivity'),motion=panel.querySelector('#reduceMotion');
+  const quality=panel.querySelector('#graphicsQuality'),sensitivity=panel.querySelector('#lookSensitivity'),motion=panel.querySelector('#reduceMotion'),environment=panel.querySelector('#fieldEnvironment');
   let returnFocus=null,denseMode=false;
   function apply(){
     const p=qualityProfile(settings.quality,devicePixelRatio);
@@ -28,9 +29,9 @@ export function initPresentation({renderer,lights,refresh}){
     const items=[...panel.querySelectorAll('button,input,select')],index=items.indexOf(document.activeElement);
     if(e.shiftKey&&index===0){e.preventDefault();items.at(-1).focus();}else if(!e.shiftKey&&index===items.length-1){e.preventDefault();items[0].focus();}
   }};
-  quality.value=settings.quality;sensitivity.value=settings.sensitivity;motion.checked=settings.reducedMotion;
-  const update=()=>{settings.quality=quality.value;settings.sensitivity=+sensitivity.value;settings.reducedMotion=motion.checked;panel.querySelector('output').textContent=settings.sensitivity.toFixed(1)+'×';apply();panel.querySelector('#fieldSettingsStatus').textContent=saveSettings(settings)?'Options saved on this device.':'Storage unavailable · options apply for this session.';};
-  quality.onchange=sensitivity.oninput=motion.onchange=update;panel.querySelector('output').textContent=settings.sensitivity.toFixed(1)+'×';apply();
+  environment.value=settings.environment;quality.value=settings.quality;sensitivity.value=settings.sensitivity;motion.checked=settings.reducedMotion;
+  const update=()=>{settings.environment=environment.value;settings.quality=quality.value;settings.sensitivity=+sensitivity.value;settings.reducedMotion=motion.checked;panel.querySelector('output').textContent=settings.sensitivity.toFixed(1)+'×';apply();panel.querySelector('#fieldSettingsStatus').textContent=saveSettings(settings)?'Options saved on this device.':'Storage unavailable · options apply for this session.';};
+  quality.onchange=environment.onchange=sensitivity.oninput=motion.onchange=update;panel.querySelector('output').textContent=settings.sensitivity.toFixed(1)+'×';apply();
   const feedback=document.createElement('div');feedback.id='fieldFeedback';feedback.setAttribute('aria-hidden','true');document.getElementById('app').appendChild(feedback);let clear;
   window.addEventListener('b29:feedback',e=>{feedback.dataset.kind=e.detail;feedback.classList.remove('pulse');void feedback.offsetWidth;feedback.classList.add('pulse');clearTimeout(clear);clear=setTimeout(()=>feedback.classList.remove('pulse'),260);});
   return {settings,apply,setDense:enabled=>{denseMode=enabled;apply();},isOpen:()=>!panel.classList.contains('hidden')};
@@ -60,4 +61,36 @@ export function dressField(world,kind,extent=85){
   if(!vertices.length)return;
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();
   const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide});const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.userData.ownedPresentation=true;world.add(mesh);
+}
+
+let weather=null;
+export function resetAtmosphere(){weather=null;}
+export function dressAtmosphere(api,theme,extent=85){
+  resetAtmosphere();if(!['woodland','coastal','night'].includes(theme))return;
+  const {world,scene,lights,renderer}=api;
+  A.applyEnv(theme==='woodland'?'forest':theme==='coastal'?'coast':'night',scene,lights,renderer);
+  const b=new A.Builder();
+  if(theme==='woodland'){
+    scene.fog=new THREE.Fog('#879c94',25,110);lights.sun.intensity=1.3;renderer.toneMappingExposure=1.1;
+    for(const side of [-1,1])for(let z=10;z>-Math.min(extent,180);z-=15){b.cyl(.16,.25,3.5,'#5b4e3a',side*14,1.75,z,6);b.cone(2,6,'#254b3f',side*14,5,z,7);}
+    const points=[];for(let i=0;i<180;i++)points.push((i*19%43)-21,(i*17%15)+2,8-(i*37%70));
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
+    const rain=new THREE.Points(geometry,new THREE.PointsMaterial({color:'#bfdad8',size:.055,transparent:true,opacity:.65,depthWrite:false}));rain.userData.ownedPresentation=true;world.add(rain);weather=rain;
+    for(let z=0;z>-Math.min(extent,180);z-=12)b.box(1.3,.012,2.8,'#657c78',7,.04,z);
+  }else if(theme==='coastal'){
+    b.box(45,.03,Math.min(extent,180),'#57939b',40,-.18,-Math.min(extent,180)/2);
+    for(let z=0;z>-Math.min(extent,180);z-=18){b.cyl(.15,.3,6,'#8a7856',14,3,z,7);for(let i=0;i<6;i++)b.box(.5,.12,5,'#597b49',14,6,z,0,i*Math.PI/3,.2);}
+    b.box(9,.04,Math.min(extent,180),'#c4b38b',14,-.03,-Math.min(extent,180)/2);
+  }else{
+    for(const side of [-1,1])for(let z=0;z>-Math.min(extent,150);z-=24){
+      b.cyl(.1,.16,7,'#515e63',side*11,3.5,z,7).box(1.6,.3,.6,'#dbe7d4',side*10.5,7,z);
+      if(z===0){const light=new THREE.PointLight('#cce5ed',28,45,1.6);light.position.set(side*10.5,6.8,z-15);world.add(light);}
+    }
+  }
+  b.mesh(world);
+}
+export function updateAtmosphere(dt,focus,settings){
+  if(!weather)return;weather.visible=settings.quality!=='performance'&&!settings.reducedMotion;if(!weather.visible)return;
+  weather.position.set(focus.x,0,focus.z-4);const pos=weather.geometry.attributes.position;
+  for(let i=0;i<pos.count;i++){const y=pos.getY(i)-dt*9;pos.setY(i,y<.2?17:y);}pos.needsUpdate=true;
 }

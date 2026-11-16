@@ -1,0 +1,5 @@
+export const GUIDED_LESSON={num:'GUIDE',name:'First Deployment',phase:'FOUNDATION',week:'GUIDED TRAINING',kind:'gauntlet',env:'course',diff:0,limit:360,
+  desc:'A short, replayable first mission. Follow each gold marker: move, jump a low wall, climb a high wall, crawl under wire, then aim and fire at two practice targets before rallying with your squad.',
+  tasks:['WASD / joystick moves. Drag to look. Follow the gold markers in order.','Tap Space to jump; hold Space against the tall wall to climb. Hold C under the wire.','At the firing line aim with mouse / arrows, K to zoom and J / click to fire.','At the last marker press E to rally with the squad. Try squad commands in War next: 1 follow, 2 hold, 3 push.'],
+  segs:[{t:'low_wall'},{t:'high_wall'},{t:'wire'},{t:'shoot',s:'static',req:2,spare:6,size:1.25}]};
+export function modifierLabel(modifier){return modifier==='endurance'?'Endurance: sprint costs 30% more stamina.':modifier==='precision'?'Precision: misses/no-shoot hits reduce training score by an extra 50 points.':'Standard rules.';}

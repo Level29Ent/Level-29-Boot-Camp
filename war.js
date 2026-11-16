@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import {dressField,feedback} from './presentation.js';
+import {afterAction,recordCareer} from './career.js';
+import {dressField,feedback,dressAtmosphere} from './presentation.js';
 import {OPERATIONS,ROLES,drillChallenges,CRUCIBLE_HURDLES} from './operations.js';
 import {saveBadges,readRecords} from './field-records.js';
 import * as A from './art.js';
@@ -17,7 +18,7 @@ export function initWar(api){
   const w={active:false,room:null};let practice=null,practiceClock=0;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
   let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
   let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
-  let objectiveMarker=null,pendingAbility=false;
+  let objectiveMarker=null,pendingAbility=false,pendingOrder=null;
   let pendingJump=false,pendingReload=false,pendingFire=false,lastRtt=0;
   const audio=new FieldAudio();audio.volume=.22;
   const message=s=>{$('warStatus').textContent=s;};
@@ -56,7 +57,7 @@ export function initWar(api){
     finally{button.disabled=false;}
   }
   $('warBots').onclick=()=>{
-    const name=cleanCallsign($('racerName').value);w.exit();practiceClock=Date.now();pendingAbility=false;lastInput={};
+    const name=cleanCallsign($('racerName').value);w.exit();practiceClock=Date.now();pendingAbility=false;pendingOrder=null;lastInput={};
     practice=createWarPractice(name,{now:()=>practiceClock,equipped:cloud.profile?.equipped,xp:cloud.profile?.xp,operation:$('localOperation').value,role:$('localRole').value});
     apply(practice.state);poll();
   };
@@ -112,7 +113,7 @@ export function initWar(api){
   async function pollOnce(){
     if(busy||!w.room||ended)return;busy=true;const code=w.room.code;
     try{
-      const payload={...lastInput,seq:++seq,code};pendingJump=pendingReload=pendingFire=pendingAbility=false;
+      const payload={...lastInput,seq:++seq,code};pendingJump=pendingReload=pendingFire=pendingAbility=false;pendingOrder=null;
       const state=await request(w.active?'war_input':'room_state',payload);
       if(w.room?.code!==code)return;
       apply(state);
@@ -152,7 +153,7 @@ export function initWar(api){
     const useButton=$('touchControls')?.querySelector('[data-key="e"]');if(useButton)useButton.innerHTML='E<br><small>RELOAD</small>';
     const crouchButton=$('touchControls')?.querySelector('[data-key="c"]');if(crouchButton)crouchButton.innerHTML='C<br><small>CROUCH</small>';
     A.applyEnv('combat',api.scene,api.lights,api.renderer);api.scene.fog=new THREE.Fog('#b8ae8e',65,160);
-    api.box(58,.3,80,'#a99b70',0,-.18,0);dressField(api.world,'war');
+    api.box(58,.3,80,'#a99b70',0,-.18,0);dressField(api.world,'war');dressAtmosphere(api,api.settings?.().environment,65);
     objectiveMarker=null;
     if(w.room.objective&&w.room.objective.id!=='elimination'){
       const o=w.room.objective;
@@ -208,10 +209,11 @@ export function initWar(api){
     audio.mode=$('warAudio').value;audio.start(api.audioContext());
     renderUi();
   }
+  for(const [id,order] of [['squadFollow','follow'],['squadHold','hold'],['squadPush','push']])$(id).onclick=()=>{if(w.active&&api.mode()==='playing')pendingOrder=order;};
   $('roleAbility').onclick=()=>{if(w.room?.objective&&api.mode()==='playing')pendingAbility=true;};
   $('warAudio').onchange=()=>{audio.mode=$('warAudio').value;};
   $('warLeave').onclick=()=>{
-    lastInput={};pendingJump=pendingReload=pendingFire=pendingAbility=false;
+    lastInput={};pendingOrder=null;pendingJump=pendingReload=pendingFire=pendingAbility=false;
     $('warExitHeading').textContent=practice?'LOCAL PRACTICE PAUSED':'YOUR SQUAD IS STILL FIGHTING';$('warExitNote').textContent=practice?'The local clock and bots are stopped. Resume when ready.':'Online matches do not pause. Return to the fight or leave this operation.';api.show('warExit');api.setMode('warExit');api.clearKeys();fireMouse=false;
     if(document.pointerLockElement===api.canvas)document.exitPointerLock();
   };
@@ -258,6 +260,7 @@ export function initWar(api){
     if(input.edges.r||input.edges.e)pendingReload=true;
     if(input.edges.j)pendingFire=true;
     if(input.edges.f)pendingAbility=true;
+    if(input.edges['1'])pendingOrder='follow';if(input.edges['2'])pendingOrder='hold';if(input.edges['3'])pendingOrder='push';
     if(active){
       const speed=(input.keys.c?2.5:input.keys.shift?6.7:4.5)*(w.room.objective?.id==='crucible'&&w.room.objective.stage===1?.72:1);
       const x=visual.x+worldX*speed*dt,z=visual.z+worldZ*speed*dt;
@@ -285,7 +288,7 @@ export function initWar(api){
     const ownModel=models.get(w.room.me);if(ownModel)ownModel.visible=own.hp>0&&!view.hidePlayer;
     lastInput={dx:active?worldX:0,dz:active?worldZ:0,yaw:view.yaw,pitch:view.pitch,
       fire:active&&!!(input.keys.j||pendingFire||fireMouse),jump:active&&pendingJump,
-      ...(w.room.objective?{ability:active&&pendingAbility}:{}),crouch:active&&!!input.keys.c,sprint:active&&!!input.keys.shift,reload:active&&!!(input.keys.r||pendingReload)};
+      ...(w.room.objective?{ability:active&&pendingAbility,...(active&&pendingOrder?{order:pendingOrder}:{})}:{}),crouch:active&&!!input.keys.c,sprint:active&&!!input.keys.shift,reload:active&&!!(input.keys.r||pendingReload)};
     if(input.edges[' ']||input.edges.r||input.edges.e)pollOnce();
     for(const t of tracers)t.age+=dt;
     tracers=tracers.filter(t=>{if(t.age>.14){api.world.remove(t.line);t.line.geometry.dispose();t.line.material.dispose();return false;}return true;});
@@ -296,6 +299,9 @@ export function initWar(api){
   function renderUi(){
     const room=w.room,own=me();if(!own)return;
     const objective=room.objective||null;
+    const captain=room.players.filter(p=>p.team===own.team&&!p.bot&&p.connected!==false).sort((a,b)=>a.slot-b.slot)[0];
+    $('squadOrderStatus').textContent=(captain?.id===own.id?'SQUAD LEADER':'LEADER: '+(captain?.name||'None'))+' · '+(room.orders?.[own.team]?.kind||'push').toUpperCase();
+    for(const id of ['squadFollow','squadHold','squadPush'])$(id).disabled=captain?.id!==own.id||own.hp<=0;
     $('warWinRule').textContent=objective?OPERATIONS[objective.id].name.toUpperCase():'FIRST TO 30';
     $('operationStatus').textContent=objective?objective.text+(objective.hold?' · '+objective.hold.toFixed(1)+'/5s':''):'';
     if(objectiveMarker){objectiveMarker.position.set(objective.x,.15,objective.z);}
@@ -333,11 +339,14 @@ export function initWar(api){
     $('warResultSummary').textContent='ALPHA '+w.room.scores.blue+' : '+w.room.scores.red+' BRAVO · '+own.kills+' eliminations · '+own.deaths+' deaths';
     $('warResultRoster').innerHTML=w.room.players.slice().sort((a,b)=>b.kills-a.kills).map(p=>
       `<div class="war-result-player ${p.id===w.room.me?'is-you':''}"><span class="${p.team}">${esc(p.name)}${p.bot?' · AI':''}</span><b>${p.kills} / ${p.deaths}</b></div>`).join('');
+    $('warAnalysis').textContent=afterAction({mode:'war',...own,objectiveSeconds:own.objectiveSeconds||0,success:['escort','crucible'].includes(w.room.objective?.id)?!!w.room.objective.won:ownScore>other});
     $('warDrillReport').textContent='';
     if(practice){
       const o=w.room.objective,success=o.id==='elimination'||o.id==='zones'||o.id==='intel'?ownScore>other:o.won;
       $('warResultHeading').textContent=success?'MISSION COMPLETE':'MISSION INCOMPLETE';
       $('warResultSummary').textContent=OPERATIONS[o.id].name+' · Alpha '+Math.floor(ownScore)+' / Bravo '+Math.floor(other)+' · '+own.kills+' eliminations · '+own.deaths+' deaths';
+      const medals=recordCareer({mode:'war',local:true,support:own.support||0,objectiveSeconds:own.objectiveSeconds||0});
+      $('warAnalysis').textContent+=' · '+(medals.saved?'Medals saved locally.':'Medals not saved: storage unavailable.');
       const challenges=drillChallenges(own,true),saved=saveBadges(challenges.filter(c=>c.done).map(c=>c.id));
       $('warDrillReport').textContent='DRILL INSTRUCTOR: '+challenges.map(c=>(c.done?'✓ ':'— ')+c.name).join(' · ')+(saved?' · Badges saved in this browser.':' · Storage unavailable; badges not saved.');
       $('warRewardText').textContent='Local AI-squad practice complete. No cloud cash, XP or leaderboard scores awarded.';return;}

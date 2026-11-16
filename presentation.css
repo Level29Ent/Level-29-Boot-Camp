@@ -45,3 +45,11 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .mission-campaign .btn{font-size:12px;padding:6px 10px;min-width:0;margin-left:10px}
 #missionLogFilter{display:block;padding:10px;margin:10px 0;background:#142323;color:#f4edda;max-width:100%;font:inherit}
 @media(max-width:700px){#practiceHudLabel{top:142px;max-width:none;width:88vw;font-size:10px}body.war-active #operationStatus{top:177px}.mission-history{grid-template-columns:1fr}}
+
+#title{overflow-y:auto;align-items:flex-start}#title .title-content{padding-top:35px;padding-bottom:35px;max-width:760px;margin-top:auto;margin-bottom:auto}
+.home-groups{display:grid;gap:14px;margin-top:18px}.home-groups h2{font:700 12px var(--font-body);letter-spacing:.16em;color:#dcc68f;margin:0 0 7px}.home-buttons{display:flex;flex-wrap:wrap;gap:8px}.home-buttons .btn{min-width:0;padding:10px 15px;font-size:15px;min-height:42px}
+.damage-bearing{position:absolute;left:50%;top:35%;transform:translateX(-50%);color:#ffbd92;background:#421b17d9;padding:8px;border:1px solid #e39575;font-size:13px;pointer-events:none}
+.ally-status{position:absolute;left:16px;top:390px;max-width:245px;pointer-events:none;color:#c7e3dc;background:#172b26dc;padding:8px;font-size:11px;line-height:1.6}.ally-status:empty{display:none}
+#barStamina.exhausted{outline:2px solid #f1b56f}#staminaFill{transition:width .08s linear}
+@media(max-width:700px){#title .title-content{padding:24px 18px;width:100%}.home-buttons .btn{font-size:13px;padding:9px 11px}.ally-status{top:auto;bottom:260px;left:8px;font-size:9px;max-width:180px}.damage-bearing{font-size:11px;top:38%}}
+@media(max-height:500px){#title .game-title{font-size:40px}#title .title-content{padding-top:16px}.ally-status{display:none}.home-groups{gap:9px}}

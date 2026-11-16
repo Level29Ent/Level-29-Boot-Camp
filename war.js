@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {damageBearing,allyStatus,reloadPose} from './combat-feedback.js';
 import {practiceConfig,practiceSummary,standardPractice,saveMission,missionLog,bestMission} from './practice-lab.js';
 import {createModeLifecycle} from './mode-lifecycle.js';
 import {afterAction,recordCareer} from './career.js';
@@ -21,6 +22,7 @@ export function initWar(api){
   const w={active:false,room:null};let practice=null,practiceClock=0;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
   let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
   let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
+  let damageUntil=0;
   let lastPractice=null;
   const selectedPractice=()=>practiceConfig({difficulty:$('practiceDifficulty').value,duration:+$('practiceDuration').value,target:+$('practiceTarget').value,infiniteAmmo:$('practiceInfiniteAmmo').checked});
   const duration=()=>practice?w.room.duration:WAR_DURATION;
@@ -148,7 +150,8 @@ export function initWar(api){
       if(!w.active)build();
       const own=me();
       if(own){
-        if(own.hp<(w.lastHealth??100))feedback('damage');w.lastHealth=own.hp;
+        if(own.reloadAt&&own.reloadAt!==w.lastReload)api.tone(280,.045,'triangle',.025);w.lastReload=own.reloadAt;
+        if(own.hp<(w.lastHealth??100)){feedback('damage');const direction=damageBearing(own,state.events||[],now(),api.look().yaw);$('warDamageDirection').textContent=direction?direction.arrow+' FIRE FROM '+direction.label:'HIT · SEEK COVER';damageUntil=now()+900;$('warDamageDirection').classList.remove('hidden');}w.lastHealth=own.hp;
         const distance=visual.distanceTo(new THREE.Vector3(own.x,own.y,own.z));
         if(distance>4||own.hp<=0)visual.set(own.x,own.y,own.z);
         else visual.lerp(new THREE.Vector3(own.x,own.y,own.z),.45);
@@ -159,14 +162,14 @@ export function initWar(api){
           const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(e.x,e.y,e.z),new THREE.Vector3(e.tx,e.ty,e.tz)]);
           const mat=new THREE.LineBasicMaterial({color:e.team==='blue'?'#8addff':'#ff8a64',transparent:true,opacity:.8});
           const line=new THREE.Line(geo,mat);api.world.add(line);tracers.push({line,age:0});
-          if(e.from===state.me){api.tone(68,.06,'sawtooth',.05);if(e.hit){$('warReticle').classList.add('hit');feedback('hit');}setTimeout(()=>$('warReticle').classList.remove('hit'),100);}
+          if(e.from===state.me){api.tone(68,.06,'sawtooth',.05);if(e.hit){$('warReticle').classList.add('hit');feedback('hit');api.tone(860,.035,'triangle',.035);}setTimeout(()=>$('warReticle').classList.remove('hit'),100);}
         }
       }
       if(state.endedAt&&!ended)end();
     }else renderLobby();
   }
   function build(){
-    ended=false;w.active=true;w.lastHealth=100;seq=w.room.nextSeq||0;lastEvents=new Set();models=new Map();tracers=[];
+    ended=false;w.active=true;damageUntil=0;w.lastReload=0;w.lastHealth=100;seq=w.room.nextSeq||0;lastEvents=new Set();models=new Map();tracers=[];
     api.graphics(true);api.clearWorld();api.show(null);api.setMode('playing');document.body.classList.add('war-active');
     $('warHud').classList.remove('hidden');$('roleAbility').classList.toggle('hidden',!w.room.objective);api.setLook(me()?.team==='red'?Math.PI:0,.18);api.clearKeys();
     const useButton=$('touchControls')?.querySelector('[data-key="e"]');if(useButton)useButton.innerHTML='E<br><small>RELOAD</small>';
@@ -210,7 +213,7 @@ export function initWar(api){
       if(!localStyle||localStyle.pattern.kind==='shirt')A.makeHelmet(model.userData.body,p.team==='blue'?'#3a7194':'#934b3f');
       // Team identifiers stay visible even when a hat or mascot replaces the helmet.
       for(const i of [0,2])new A.Builder().box(.235,.065,.245,p.team==='blue'?'#3a9fdf':'#e75e4e',0,-.25,0).mesh(model.userData.limbs[i]);
-      A.makeRifle(model.userData.body);
+      model.userData.rifle=A.makeRifle(model.userData.body);
       if(w.room.objective&&p.id===w.room.me&&w.room.objective.id==='crucible'){
         const crate=new A.Builder().box(.8,.6,.6,'#69804b',0,1,-.7).box(.84,.08,.64,'#c2ab64',0,1.3,-.7).mesh(model.userData.body);
         crate.visible=false;model.userData.supplyCrate=crate;
@@ -290,6 +293,7 @@ export function initWar(api){
     }
     for(const p of w.room.players){
       const model=models.get(p.id);if(!model)continue;
+      const rifle=model.userData.rifle;if(rifle){const tilt=api.settings?.().reducedMotion?0:reloadPose((p.reloadAt||0)-now());rifle.rotation.z=-.55*tilt;rifle.position.y=1.5-.2*tilt;}
       if(p.id===w.room.me){
         if(model.userData.supplyCrate)model.userData.supplyCrate.visible=w.room.objective.stage===1;
         model.visible=own.hp>0;model.position.copy(visual);model.rotation.y=yaw;
@@ -329,6 +333,8 @@ export function initWar(api){
     const t=elapsed(),remaining=Math.ceil(Math.max(0,duration()-Math.max(0,t)));
     $('warTimer').textContent=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
     $('blueScore').textContent=Math.floor(room.scores.blue);$('redScore').textContent=Math.floor(room.scores.red);
+    $('warDamageDirection').classList.toggle('hidden',now()>=damageUntil);
+    $('warAllyStatus').replaceChildren(...room.players.filter(p=>p.team===own.team&&p.bot).map(p=>{const row=document.createElement('div');row.textContent=p.name+' · '+allyStatus(p,now());return row;}));
     $('warHealth').textContent=own.hp;$('warAmmo').textContent=own.reloadAt?'RELOADING':own.ammo+' / 30';
     $('warHealthBar').style.width=own.hp+'%';
     $('warPersonalScore').textContent=own.kills+' ELIMS / '+own.deaths+' DEATHS';

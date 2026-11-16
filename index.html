@@ -86,23 +86,18 @@
       <h1 class="game-title">LEVEL 29<span>BOOT CAMP</span></h1>
       <p class="tagline">Race. Fight. Earn your stripes.<br>100 courses · 5v5 war · daily field cash.</p>
       <div class="profile-strip"><span id="titleRank">RECRUIT</span><span id="titleWallet">CLOUD PLAYER DOSSIER</span><button id="profileShortcut">Save name / play</button></div>
-      <div class="menu">
-        <button class="btn primary" id="btnGuided">Guided First Mission</button><button class="btn" id="btnDailyTraining">Daily Training</button><button class="btn" id="btnMissionBoard">Mission Records</button><button class="btn primary" id="btnWar">5v5 War</button>
-        <button class="btn" id="btnMout">MOUT Shoot House</button>
-        <button class="btn" id="btnRace">60-Second Races</button>
-        <button class="btn" id="btnCommand">Command & Rewards</button>
-        <button class="btn" id="btnService">Ranks & Avatar Kits</button>
-        <button class="btn" id="btnStart">Start Training</button>
-        <button class="btn" id="btnSelect">Training Schedule</button>
-        <button class="btn" id="btnControls">Controls</button>
-      </div>
+      <nav class="home-groups" aria-label="Game modes">
+        <section><h2>TRAINING</h2><div class="home-buttons"><button class="btn primary" id="btnGuided">Guided First Mission</button><button class="btn" id="btnStart">Campaign</button><button class="btn" id="btnSelect">Training Schedule</button><button class="btn" id="btnDailyTraining">Daily Training</button></div></section>
+        <section><h2>COMBAT & RACING</h2><div class="home-buttons"><button class="btn primary" id="btnMout">MOUT Training</button><button class="btn" id="btnWar">5v5 War</button><button class="btn" id="btnRace">60-Second Races</button></div></section>
+        <section><h2>RECORDS & GEAR</h2><div class="home-buttons"><button class="btn" id="btnMissionBoard">Mission Records</button><button class="btn" id="btnCommand">Command & Rewards</button><button class="btn" id="btnService">Ranks & Avatar Kits</button><button class="btn" id="btnControls">Controls</button></div></section>
+      </nav>
     </div>
   </section>
 
   <section id="missionBoard" class="screen hidden"><div class="sheet command-sheet">
     <div class="brief-phase">THIS BROWSER / UNRANKED PERSONAL RECORDS</div><h2 class="sheet-title">YOUR FIELD DOSSIER</h2>
     <p class="race-fine">A personal board, not a global leaderboard. Data is shared by players of this browser and disappears when site data is cleared. No cloud accounts, cash or XP are changed. Only the latest 20 finished local War missions are retained.</p>
-    <div id="missionBoardStats" class="mission-stats"></div><p id="missionBoardMout" class="brief-text"></p>
+    <div id="missionBoardStats" class="mission-stats"></div><p id="missionBoardMout" class="brief-text"></p><p id="missionBoardUrban" class="brief-text"></p>
     <h3>TOP CAMPAIGN SCORES</h3><ul id="missionBoardCampaign" class="mission-campaign"></ul>
     <h3>RACE PERSONAL BESTS</h3><p id="missionBoardRaces" class="race-fine"></p>
     <h3>RECENT LOCAL WAR MISSIONS</h3><label for="missionLogFilter">FILTER BY MISSION</label><select id="missionLogFilter"><option value="">All missions</option></select>
@@ -114,8 +109,8 @@
   <section id="moutBrief" class="screen hidden">
     <div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL TACTICAL TRAINING / SOLO TARGET DRILL</div>
       <h2 class="sheet-title">MOUT<br>SHOOT HOUSE</h2>
-      <p class="brief-text">Military Operations on Urban Terrain. A sunlit training village of sand-colored buildings, stacked containers, dark window openings and gravel lanes. Breach four ground-floor drill rooms, climb the metal ramp, clear two upper rooms and extract. Only the six marked rooms and central route are playable; surrounding village blocks are scenery.</p>
-      <ul class="mout-orders"><li>180 seconds. Clear all 12 red threats and enter all six rooms.</li><li>Blue targets are NO SHOOT: each hit costs 250 drill points.</li><li>Move within 2m of a door and press E / BREACH. Doors block shots until opened.</li><li>WASD / joystick moves; drag or captured mouse aims; J / left mouse fires; K / right mouse aims down sights; R or Space reloads; C crouches; Shift sprints.</li><li>Touch: left joystick moves, swipe the scene to look, hold FIRE, tap BREACH / RELOAD. P / Escape pauses the local timer.</li></ul>
+      <p id="moutBriefDescription" class="brief-text">Military Operations on Urban Terrain. A sunlit training village of sand-colored buildings, stacked containers, dark window openings and gravel lanes. Breach four ground-floor drill rooms, climb the metal ramp, clear two upper rooms and extract. Only the six marked rooms and central route are playable; surrounding village blocks are scenery.</p>
+      <label for="moutCourse" class="race-label">TRAINING ROUTE</label><select id="moutCourse"><option value="classic">Container lane · six rooms · 180 seconds</option><option value="urban">Urban block · courtyard, two connected rooms & rooftop · 240 seconds</option></select><p class="race-fine">Urban block: enter the courtyard, breach into U1/U2, clear both ground rooms and six red targets across the block, climb the exterior east stairs and clear ROOF, then extract at the green rooftop marker. Interior doorway connects U1/U2. No cloud XP or six-room medal/best unlocks.</p><ul class="mout-orders"><li id="moutRouteGoal">180 seconds. Clear all 12 red threats and enter all six rooms.</li><li>Blue targets are NO SHOOT: each hit costs 250 drill points.</li><li>Move within 2m of a door and press E / BREACH. Doors block shots until opened.</li><li>WASD / joystick moves; drag or captured mouse aims; J / left mouse fires; K / right mouse aims down sights; R or Space reloads; C crouches; Shift sprints.</li><li>Touch: left joystick moves, swipe the scene to look, hold FIRE, tap BREACH / RELOAD. P / Escape pauses the local timer.</li></ul>
       <p class="race-fine">Practice targets only. No cloud login needed. Successful extraction records save on this device only, with no global rank, cash or XP.</p><p id="moutBest" class="race-fine"></p>
       <div class="menu row"><button id="moutDeploy" class="btn primary">Deploy into shoot house</button><button id="moutSurvey" class="btn">Survey training village</button><button id="moutBack" class="btn">Back to base</button></div>
     </div>
@@ -124,7 +119,7 @@
     <div class="mout-survey-panel panel"><div class="brief-phase">MOUT / SITE SURVEY · CLOCK STOPPED</div><h2>TRAINING VILLAGE</h2>
     <p id="moutSurveyDescription" role="status"></p><div class="mout-survey-views" role="group" aria-label="Survey viewpoints">
     <button id="moutViewvillage" class="btn" aria-pressed="true">Village overview</button><button id="moutViewcontainers" class="btn" aria-pressed="false">Container lane</button><button id="moutViewupper" class="btn" aria-pressed="false">Upper deck</button></div>
-    <p class="race-fine">View-only survey. No timer, shots, scores or rewards. Deploy starts a fresh 180-second drill at ground level.</p>
+    <p class="race-fine">View-only survey. No timer, shots, scores or rewards. Deploy starts a fresh drill at ground level using the selected route timer.</p>
     <div class="menu row"><button id="moutSurveyDeploy" class="btn primary">Deploy fresh drill</button><button id="moutSurveyBack" class="btn">Back to briefing</button></div></div>
   </section>
   <section id="moutPause" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL DRILL PAUSED / CLOCK STOPPED</div><h2 class="sheet-title">HOLD POSITION</h2><div class="menu"><button id="moutResume" class="btn primary">Resume drill</button><button id="moutAbort" class="btn">Abort to base</button></div></div></section>
@@ -132,7 +127,7 @@
   <aside id="moutHud" class="hidden" aria-label="Shoot house tactical HUD">
     <div class="mout-top"><div><small>CLEARANCE TIME</small><strong id="moutClock">0:00 / 3:00</strong></div><div><small>ACCURACY</small><strong id="moutAccuracy">0%</strong></div><div><small>MAGAZINE</small><strong id="moutAmmo">12 / 12</strong></div><button id="moutPauseButton">Pause drill</button></div>
     <div class="mout-mission"><b id="moutClearance"></b><p id="moutObjective" role="status" aria-live="polite"></p><small id="moutRoomList"></small></div>
-    <div id="moutReticle" class="mout-reticle" aria-hidden="true">+</div><div class="mout-hint">RED = THREAT · BLUE = NO SHOOT<br>E breach · R / Space reload · J fire · K aim · C crouch</div>
+    <aside class="mout-nav"><canvas id="moutMap" width="160" height="160" aria-label="MOUT site map: labeled zones, gold next objective, blue player arrow"></canvas><p id="moutDirection" role="status"></p></aside><div id="moutReticle" class="mout-reticle" aria-hidden="true">+</div><div class="mout-hint">RED = THREAT · BLUE = NO SHOOT<br>E breach · R / Space reload · J fire · K aim · C crouch</div>
   </aside>
 
   <section id="service" class="screen hidden">
@@ -339,7 +334,7 @@
     <div class="war-top"><div class="war-team-score blue"><span>ALPHA</span><strong id="blueScore">0</strong></div><div class="war-clock"><strong id="warTimer">3:00</strong><small id="warWinRule">FIRST TO 30</small></div><div class="war-team-score red"><strong id="redScore">0</strong><span>BRAVO</span></div></div>
     <div id="practiceHudLabel"></div><div id="warModeBadge">PVBOT / ALPHA</div><div id="warNetwork" role="status">CLOUD LIVE</div><div class="war-hud-buttons"><button id="warShowScores">Scores</button><button id="warLeave">Exit</button></div>
     <canvas id="warRadar" width="192" height="224" aria-label="Battlefield radar: blue allies, red enemies, gold player"></canvas>
-    <div id="operationStatus" role="status"></div><button id="roleAbility" class="hidden">F / ABILITY</button><div id="warKillfeed"></div><div id="warReticle"></div>
+    <div id="operationStatus" role="status"></div><button id="roleAbility" class="hidden">F / ABILITY</button><div id="warDamageDirection" class="damage-bearing hidden" role="status"></div><div id="warAllyStatus" class="ally-status" aria-label="AI teammate status"></div><div id="warKillfeed"></div><div id="warReticle"></div>
     <div class="war-vitals"><div><small>HEALTH</small><strong id="warHealth">100</strong><div class="war-hp-track"><i id="warHealthBar"></i></div></div><div><small>RIFLE / AMMO</small><strong id="warAmmo">30 / 30</strong></div><div id="warPersonalScore">0 ELIMS / 0 DEATHS</div></div>
     <div id="squadCommands"><small id="squadOrderStatus"></small><div><button id="squadFollow">1 · Follow</button><button id="squadHold">2 · Hold here</button><button id="squadPush">3 · Push objective</button></div></div><div id="warControlsHint">WASD / joystick move · Drag aim<br>J / mouse fire · E / R reload · K zoom<br>Space jump · C crouch · Shift sprint</div>
     <div id="warCountdown" class="hidden">3</div>

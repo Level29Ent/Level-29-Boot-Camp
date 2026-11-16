@@ -1,3 +1,4 @@
+import {readUrbanRecord} from './urban-records.js';
 import {missionLog,missionExport,practiceSummary,bestMission} from './practice-lab.js';
 import {readRecords,bestDrill,bestRace} from './field-records.js';
 import {loadTraining} from './player-save.js';
@@ -15,6 +16,7 @@ export function initMissionBoard(api){
       const card=node('div','', 'mission-stat');card.append(node('strong',value),node('span',label));stats.appendChild(card);
     }
     $('missionBoardMout').textContent=drill?'SHOOT HOUSE BEST · '+drill.score+' points · '+drill.time.toFixed(2)+'s · '+drill.accuracy+'% accuracy':'SHOOT HOUSE · Complete an extraction to save a personal best.';
+    const urban=readUrbanRecord();$('missionBoardUrban').textContent=urban?'URBAN BLOCK BEST · '+urban.score+' points · '+urban.time.toFixed(2)+'s · separate from container MOUT':'URBAN BLOCK · Complete courtyard, rooms and roof extraction to save a separate best.';
     const campaign=$('missionBoardCampaign');campaign.replaceChildren();
     for(const [id,record] of training.slice(0,5)){
       const row=node('li','Level '+(id+1)+' · '+record.score+' points · '+record.time.toFixed(1)+'s ');const play=node('button','Train this level','btn');play.onclick=()=>api.playTraining(id);row.appendChild(play);campaign.appendChild(row);

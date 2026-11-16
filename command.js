@@ -1,3 +1,4 @@
+import {MEDALS,readCareer,cosmeticUnlocked} from './career.js';
 import {cloud} from './cloud.js';
 import {localCallsign,saveLocalPlayer} from './local-player.js';
 import {AVATAR_STYLES,STYLE_PALETTES,STYLE_CATEGORIES,selectedStyle,selectStyle,styleFor,stylePreview} from './avatar-styles.js';
@@ -38,12 +39,13 @@ export function initCommand(api){
     const styles=AVATAR_STYLES.filter(style=>(!palette||style.palette.id===palette)&&(!category||style.pattern.category===category));
     const pages=Math.max(1,Math.ceil(styles.length/pageSize));stylePage=Math.max(0,Math.min(stylePage,pages-1));
     const current=selectedStyle()??cloud.profile?.style;
-    $('avatarSelected').textContent=current?'Selected: '+styleFor(current).name+' · '+(cloud.profile?.style===current?'Saved online for next deployment.':'Local appearance (sign in and select to sync).'):'Using your cloud Armory kit. Select a free style below to override its appearance on this device.';
+    $('avatarSelected').textContent=current?'Selected: '+styleFor(current).name+' · '+(cloud.profile?.style===current?'Saved online for next deployment.':(styleFor(current)?.unlock?'Device-local medal reward; not cloud inventory.':'Local appearance (sign in and select to sync).')):'Using your cloud Armory kit. Select a free style below to override its appearance on this device.';
     $('avatarPage').textContent='Page '+(stylePage+1)+' of '+pages+' · '+styles.length+' styles';
     $('avatarPrev').disabled=stylePage===0;$('avatarNext').disabled=stylePage===pages-1;
-    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><p>${style.pattern.material} · ${style.pattern.category}</p><button class="btn" data-preview="${style.id}">View in 3D</button><button class="btn" data-style="${style.id}" ${styleSaving||style.id===current&&(!cloud.profile||cloud.profile.style===current)?'disabled':''}>${style.id===current?cloud.profile&&cloud.profile.style!==current?'Sync this style':'Selected':'Use this style'}</button></article>`).join('')||'<p class="race-fine">No styles match these filters. Try Mascots for the Signature collection.</p>';
+    const career=readCareer();$('careerMedals').textContent='DEVICE MEDALS · '+MEDALS.map(m=>(career.medals.includes(m.id)?'✓ ':'— ')+m.name+': '+m.desc).join(' | ');
+    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><p>${style.pattern.material} · ${style.pattern.category}${style.unlock?' · DEVICE-LOCAL MEDAL REWARD':''}</p><button class="btn" data-preview="${style.id}">View in 3D</button><button class="btn" data-style="${style.id}" ${!cosmeticUnlocked(style.id)||styleSaving||style.id===current&&(!cloud.profile||style.unlock||cloud.profile.style===current)?'disabled':''}>${!cosmeticUnlocked(style.id)?'Earn '+MEDALS.find(m=>m.cosmetic===style.id).name:style.id===current?cloud.profile&&!style.unlock&&cloud.profile.style!==current?'Sync this style':'Selected':'Use this style'}</button></article>`).join('')||'<p class="race-fine">No styles match these filters. Try Mascots for the Signature collection.</p>';
   }
-  $('avatarPalette').innerHTML='<option value="">All palettes / '+AVATAR_STYLES.length+' styles</option><option value="signature">Signature / Jester Mascot</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
+  $('avatarPalette').innerHTML='<option value="">All palettes / '+AVATAR_STYLES.length+' styles</option><option value="signature">Signature / Jester Mascot</option><option value="earned">Earned medal cosmetics</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
   $('avatarCategory').innerHTML='<option value="">All clothing types</option>'+STYLE_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');
   $('avatarCategory').onchange=()=>{stylePage=0;renderStyles();};
   $('avatarPalette').onchange=()=>{stylePage=0;renderStyles();};
@@ -54,6 +56,7 @@ export function initCommand(api){
     if(styleSaving)return;
     const result=selectStyle(id);if(!result.ok)return;
     renderStyles();previewStyle(id);
+    if(styleFor(id)?.unlock){$('avatarSaveStatus').textContent=result.saved?'Earned cosmetic equipped locally. These device medals do not unlock cloud inventory.':'Equipped for this session only; storage unavailable.';return;}
     if(cloud.profile){
       styleSaving=true;renderStyles();
       $('avatarSaveStatus').textContent='Saving online appearance…';

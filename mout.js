@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import {afterAction,recordCareer} from './career.js';
+import {bestDrill,saveDrillRecord} from './field-records.js';
+import {feedback} from './presentation.js';
 import * as A from './art.js';
 import {MOUT_LIMIT,MOUT_MAGAZINE,MOUT_ROOMS,wallsFor,floorAt,canMove,createDrill,tickDrill,recordShot,clearedRooms,accuracyFor,extractDrill,drillScore} from './mout-rules.js';
 const $=id=>document.getElementById(id);
@@ -33,7 +36,7 @@ export function initMout(api){
       api.renderer.shadowMap.enabled=saved.shadows;api.camera.fov=saved.fov;api.camera.updateProjectionMatrix();saved=null;
     }
   };
-  m.open=()=>{api.stopModes();api.setMode('moutBrief');api.show('moutBrief');};
+  m.open=()=>{api.stopModes();api.setMode('moutBrief');api.show('moutBrief');const best=bestDrill();$('moutBest').textContent=best?'YOUR BEST · '+best.score+' points · '+best.time.toFixed(2)+'s · '+best.accuracy+'% accuracy':'Complete an extraction to save your personal best on this device.';};
   $('btnMout').onclick=m.open;$('moutBack').onclick=api.title;
   $('moutDeploy').onclick=()=>start();$('moutRetry').onclick=()=>start();$('moutResultBack').onclick=api.title;
   $('moutPauseButton').onclick=()=>m.pause();$('moutResume').onclick=()=>m.pause();$('moutAbort').onclick=api.title;
@@ -52,7 +55,7 @@ export function initMout(api){
   m.pointerMove=e=>{
     if(!m.active)return false;
     if(api.mode()!=='playing')return true;
-    const gain=api.input().keys.k ? .0012 : .0025;
+    const gain=(api.input().keys.k ? .0012 : .0025)*(api.settings?.().sensitivity||1);
     if(document.pointerLockElement===api.canvas){look.yaw-=e.movementX*gain;look.pitch-=e.movementY*gain;}
     else if(e.pointerType==='mouse'&&e.buttons){
       if(e.buttons){look.yaw-=(e.movementX||0)*gain;look.pitch-=(e.movementY||0)*gain;}
@@ -65,7 +68,7 @@ export function initMout(api){
   api.canvas.addEventListener('pointerdown',e=>{if(m.active&&e.pointerType!=='mouse')touch={id:e.pointerId,x:e.clientX,y:e.clientY};});
   api.canvas.addEventListener('pointermove',e=>{
     if(!m.active||!touch||touch.id!==e.pointerId||api.mode()!=='playing')return;
-    look.yaw-=(e.clientX-touch.x)*.003;look.pitch=THREE.MathUtils.clamp(look.pitch-(e.clientY-touch.y)*.003,-1.05,1.05);
+    look.yaw-=(e.clientX-touch.x)*.003*(api.settings?.().sensitivity||1);look.pitch=THREE.MathUtils.clamp(look.pitch-(e.clientY-touch.y)*.003*(api.settings?.().sensitivity||1),-1.05,1.05);
     touch={id:e.pointerId,x:e.clientX,y:e.clientY};
   });
   for(const event of ['pointerup','pointercancel'])api.canvas.addEventListener(event,()=>{touch=null;});
@@ -160,13 +163,13 @@ export function initMout(api){
     A.applyEnv('night',api.scene,api.lights,api.renderer);api.scene.background=new THREE.Color('#151f25');api.scene.fog=new THREE.Fog('#18232b',22,65);
     api.lights.hemi.intensity=.85;api.lights.sun.intensity=.5;api.lights.sun.castShadow=false;api.renderer.toneMappingExposure=1.15;api.renderer.shadowMap.enabled=true;
     if(!api.camera.parent)api.scene.add(api.camera);
-    lastClock=clock();m.active=true;document.body.classList.add('mout-active');api.setMode('playing');api.show(null);api.clearKeys();controls(true);$('moutHud').classList.remove('hidden');api.startAudio();build();updateCamera();renderHud();
+    lastClock=clock();m.active=true;document.body.classList.add('mout-active');api.setMode('playing');api.show(null);api.clearKeys();controls(true);$('moutHud').classList.remove('hidden');api.startAudio();build();api.applyQuality?.();updateCamera();renderHud();
   }
   function updateCamera(){
     const crouch=api.input().keys.c;api.camera.position.set(position.x,position.y+(crouch?1.05:1.65),position.z);
     const direction=new THREE.Vector3(-Math.sin(look.yaw)*Math.cos(look.pitch),Math.sin(look.pitch),-Math.cos(look.yaw)*Math.cos(look.pitch));
     api.camera.lookAt(api.camera.position.clone().add(direction));api.camera.fov=api.input().keys.k?48:72;api.camera.updateProjectionMatrix();api.camera.updateMatrixWorld();
-    if(weapon){weapon.position.z=-.6+flash*.5;weapon.position.y=-.27+(state.reload>0?-.15:0);}
+    if(weapon){weapon.position.z=-.6+(api.settings?.().reducedMotion?0:flash*.5);weapon.position.y=-.27+(state.reload>0?-.15:0);}
   }
   function fire(){
     if(state.reload||!state.ammo){if(!state.ammo)setNotice('EMPTY · RELOAD / R OR SPACE');return;}
@@ -175,7 +178,7 @@ export function initMout(api){
     const hit=raycaster.intersectObjects([...solids.filter(mesh=>!doors.some(d=>d.mesh===mesh)),...closed,...boards],false)[0];
     const target=hit&&live.find(t=>t.meshes.includes(hit.object));
     recordShot(state,target&&!target.friendly?target.room.id:null,!!target?.friendly);
-    if(target){target.down=true;for(const mesh of target.meshes)mesh.visible=false;target.marker.visible=false;setNotice(target.friendly?'NO-SHOOT HIT · −250 SCORE':'TARGET DOWN');}
+    if(target){feedback(target.friendly?'penalty':'hit');$('moutReticle').classList.toggle('confirmed',!target.friendly);target.down=true;for(const mesh of target.meshes)mesh.visible=false;target.marker.visible=false;setNotice(target.friendly?'NO-SHOOT HIT · −250 SCORE':'TARGET DOWN');}
     else setNotice('MISS / COVER HIT');
     api.tone(70,.055,'sawtooth',.04);flash=.1;cooldown=.22;
   }
@@ -183,11 +186,11 @@ export function initMout(api){
     if(!m.active||state.ended||api.mode()!=='playing')return;
     const now=clock(),elapsedDelta=Math.max(0,(now-lastClock)/1000);lastClock=now;
     const input=api.input();tickDrill(state,elapsedDelta);if(state.ended){finish();return;}
-    cooldown=Math.max(0,cooldown-elapsedDelta);flash=Math.max(0,flash-elapsedDelta);
+    cooldown=Math.max(0,cooldown-elapsedDelta);if(cooldown===0)$('moutReticle').classList.remove('confirmed');flash=Math.max(0,flash-elapsedDelta);
     const gain=input.keys.k ? .8 : 1.6;
     look.yaw+=((input.keys.arrowleft?1:0)-(input.keys.arrowright?1:0))*dt*gain;
     look.pitch=THREE.MathUtils.clamp(look.pitch+((input.keys.arrowup?1:0)-(input.keys.arrowdown?1:0))*dt,-1.05,1.05);
-    const pad=api.gamepadLook();if(pad){look.yaw-=pad.x*dt*1.8;look.pitch=THREE.MathUtils.clamp(look.pitch-pad.y*dt*1.2,-1.05,1.05);}
+    const pad=api.gamepadLook();if(pad){look.yaw-=pad.x*dt*1.8*(api.settings?.().sensitivity||1);look.pitch=THREE.MathUtils.clamp(look.pitch-pad.y*dt*1.2*(api.settings?.().sensitivity||1),-1.05,1.05);}
     let dx=(input.keys.d?1:0)-(input.keys.a?1:0),dz=(input.keys.s?1:0)-(input.keys.w?1:0);
     if(input.joy.on){dx=input.joy.x;dz=input.joy.y;}
     const length=Math.max(1,Math.hypot(dx,dz));dx/=length;dz/=length;
@@ -210,7 +213,7 @@ export function initMout(api){
   };
   function renderHud(){
     const cleared=clearedRooms(state),nearest=doors.find(d=>!state.opened.has(d.room.id)&&Math.hypot(position.x-d.room.side*1.5,position.z-d.room.z)<2&&Math.abs(position.y-d.room.y)<.4);
-    $('moutClock').textContent=stamp(state.elapsed)+' / '+stamp(MOUT_LIMIT);$('moutAccuracy').textContent=accuracyFor(state)+'%';
+    $('moutClock').textContent=stamp(state.elapsed)+' / '+stamp(MOUT_LIMIT);$('moutClock').classList.toggle('urgent',MOUT_LIMIT-state.elapsed<30);$('moutAccuracy').textContent=accuracyFor(state)+'%';
     $('moutAmmo').textContent=state.reload?'RELOADING':state.ammo+' / '+MOUT_MAGAZINE;
     $('moutClearance').textContent=cleared.length+' / 6 ROOMS · '+state.hits+' / 12 THREATS';
     $('moutObjective').textContent=state.elapsed<noticeUntil?notice:nearest?'E / BREACH · '+nearest.room.id:cleared.length===6?'ALL CLEAR · UPPER CATWALK EXTRACTION':position.y>2.8?'UPPER DECK · CLEAR A3 / B3':position.z< -16?'RAMP TO UPPER BREACH POINTS':'CLEAR A1 / B1 / A2 / B2 · RED ONLY';
@@ -218,8 +221,12 @@ export function initMout(api){
   }
   function finish(){
     unlock();api.clearKeys();api.setMode('moutResult');api.show('moutResult');$('moutHud').classList.add('hidden');
+    const medal=recordCareer({mode:'mout',success:state.success,accuracy:accuracyFor(state),penalties:state.penalties});
+    $('moutAnalysis').textContent=afterAction({mode:'mout',...state})+(medal.fresh.length?' · Clean Breach cosmetic earned'+(medal.saved?' locally.':' (not saved; storage unavailable).'):'');
     $('moutResultTitle').textContent=state.success?'EXTRACTION COMPLETE':'TIME EXPIRED';
     $('moutResultSummary').textContent=clearedRooms(state).length+' / 6 rooms · '+state.hits+' / 12 threats · '+state.penalties+' no-shoot hits';
+    const result=saveDrillRecord({success:state.success,score:drillScore(state),time:state.elapsed,accuracy:accuracyFor(state)});
+    $('moutRecordStatus').textContent=!result.eligible?'Extraction incomplete · personal best unchanged.':!result.saved?'Storage unavailable · result was not saved.':result.best?'NEW PERSONAL BEST · saved on this device.':'Personal best preserved on this device.';
     $('moutResultStats').textContent='Clearance '+state.elapsed.toFixed(2)+'s · Accuracy '+accuracyFor(state)+'% ('+state.hits+'/'+state.shots+') · Drill score '+drillScore(state);
   }
   m.text=()=>({kind:'mout',name:'MOUT Shoot House',...position,elapsed:+state.elapsed.toFixed(2),limit:MOUT_LIMIT,shots:state.shots,hits:state.hits,accuracy:accuracyFor(state),ammo:state.ammo,reload:state.reload,penalties:state.penalties,cleared:clearedRooms(state).map(r=>r.id),opened:[...state.opened],ended:state.ended,success:state.success,score:drillScore(state)});

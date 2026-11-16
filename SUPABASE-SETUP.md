@@ -54,3 +54,12 @@ Expected response includes `ok:true`, `onlineWar:true`, `appearance:true`, and `
 - For rollback, revert the client PR to return to local-only play; do not delete profile tables or reset the database. Preserve recovery codes and data backups before changing any deployed schema.
 
 Official references: [deploy Edge Functions](https://supabase.com/docs/guides/functions/deploy), [function configuration](https://supabase.com/docs/guides/functions/function-configuration), [runtime secrets](https://supabase.com/docs/guides/functions/secrets).
+
+## Updating squad commands and AI
+The gameplay-depth update changes the Edge Function's imported shared rules but adds no SQL migration. After pulling the merged update, redeploy with the same authenticated local CLI:
+
+```sh
+npx supabase@3.1.0 functions deploy bootcamp-command --remote=txrecpwlkdsyizulqnmn --use-api --no-verify-jwt
+```
+
+Then test two independent players in co-op: the lowest connected team slot may issue Follow/Hold/Push to AI allies, the other human must not override it, Hold remains anchored, and reload/low-health behavior may take priority. Observe objective-time and accuracy reports after finishing the match. Existing client-only medal cosmetics must **not** be accepted as cloud appearance updates. There is no new database reset, key exchange or schema change for this update. Remote deployment and real two-device verification remain the owner's required steps, not completed by this PR.

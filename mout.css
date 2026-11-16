@@ -3,3 +3,14 @@
 .mout-active #touchControls .actions button{border-radius:12px}.mout-active #touchControls .actions{bottom:max(65px,env(safe-area-inset-bottom))}.mout-active #touchControls .joy{bottom:max(65px,env(safe-area-inset-bottom))}
 @media(max-width:700px){.mout-top{gap:10px;padding:10px;width:calc(100% - 16px)}.mout-top small{font-size:9px;letter-spacing:.04em}.mout-top strong{font-size:20px}.mout-top button{font-size:11px;padding:6px;max-width:70px}.mout-mission{top:88px;left:8px;max-width:calc(100% - 16px);right:8px;font-size:12px;padding:8px}.mout-hint{display:none}.mout-active #touchControls .joy{width:124px;height:124px;left:12px}.mout-active #touchControls .joy-knob{width:54px;height:54px;margin:-27px 0 0 -27px}.mout-active #touchControls .actions{grid-template-columns:repeat(3,46px);right:10px;gap:6px}.mout-active #touchControls .actions button{width:46px;height:46px;font-size:14px}.mout-active #touchControls .actions small{font-size:9px}.mout-sheet{padding:22px 18px}.mout-orders{font-size:14px}.mout-active #joyBtn{bottom:10px;right:10px;left:auto;transform:none}.mout-active #audioBtn{bottom:10px;left:10px;right:auto;transform:none}}
 @media(max-height:500px){.mout-mission{max-width:340px;top:76px}.mout-top{padding:6px 12px}.mout-top strong{font-size:22px}.mout-hint{display:none}.mout-active #touchControls .joy{width:110px;height:110px;bottom:30px}.mout-active #touchControls .actions{bottom:30px}}
+
+/* Reference-inspired daylight training village; survey is view-only, not flight. */
+.mout-survey-screen{background:transparent!important;align-items:flex-end!important;justify-content:flex-start!important;pointer-events:none;padding:18px!important}
+.mout-survey-panel{pointer-events:auto;width:min(710px,100%);padding:18px;background:#14201de8;border-left:3px solid #d5bd83;margin-bottom:44px}
+.mout-survey-panel h2{font:900 30px var(--font-display);color:#eee1bc;margin:8px 0}
+.mout-survey-panel p{font-size:14px;line-height:1.5;color:#e4e5d2;margin:8px 0}
+.mout-survey-views{display:flex;flex-wrap:wrap;gap:8px}.mout-survey-panel .btn{min-width:0;font-size:13px;padding:9px 13px;min-height:40px}
+.mout-survey-views [aria-pressed=true]{border-color:#e1c483;background:#3f4d3f;color:#fff3ce}
+@media(max-width:700px){.mout-survey-panel{padding:10px;margin-bottom:44px}.mout-survey-panel h2{font-size:23px}.mout-survey-panel p{font-size:11px}.mout-survey-panel .btn{padding:7px 9px;font-size:11px;min-height:36px}.mout-survey-screen{padding:8px!important}}
+@media(max-height:500px){.mout-survey-panel{max-width:540px;max-height:60vh;overflow:auto}.mout-survey-panel .race-fine{display:none}}
+.mout-survey-screen{backdrop-filter:none!important}

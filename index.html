@@ -103,11 +103,18 @@
   <section id="moutBrief" class="screen hidden">
     <div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL TACTICAL TRAINING / SOLO TARGET DRILL</div>
       <h2 class="sheet-title">MOUT<br>SHOOT HOUSE</h2>
-      <p class="brief-text">Military Operations on Urban Terrain. Breach four ground-floor container rooms, climb the metal ramp, then clear two stacked upper rooms and extract from the catwalk.</p>
+      <p class="brief-text">Military Operations on Urban Terrain. A sunlit training village of sand-colored buildings, stacked containers, dark window openings and gravel lanes. Breach four ground-floor drill rooms, climb the metal ramp, clear two upper rooms and extract. Only the six marked rooms and central route are playable; surrounding village blocks are scenery.</p>
       <ul class="mout-orders"><li>180 seconds. Clear all 12 red threats and enter all six rooms.</li><li>Blue targets are NO SHOOT: each hit costs 250 drill points.</li><li>Move within 2m of a door and press E / BREACH. Doors block shots until opened.</li><li>WASD / joystick moves; drag or captured mouse aims; J / left mouse fires; K / right mouse aims down sights; R or Space reloads; C crouches; Shift sprints.</li><li>Touch: left joystick moves, swipe the scene to look, hold FIRE, tap BREACH / RELOAD. P / Escape pauses the local timer.</li></ul>
       <p class="race-fine">Practice targets only. No cloud login needed. Successful extraction records save on this device only, with no global rank, cash or XP.</p><p id="moutBest" class="race-fine"></p>
-      <div class="menu row"><button id="moutDeploy" class="btn primary">Deploy into shoot house</button><button id="moutBack" class="btn">Back to base</button></div>
+      <div class="menu row"><button id="moutDeploy" class="btn primary">Deploy into shoot house</button><button id="moutSurvey" class="btn">Survey training village</button><button id="moutBack" class="btn">Back to base</button></div>
     </div>
+  </section>
+  <section id="moutSurveyScreen" class="screen hidden mout-survey-screen" aria-label="Training village survey">
+    <div class="mout-survey-panel panel"><div class="brief-phase">MOUT / SITE SURVEY · CLOCK STOPPED</div><h2>TRAINING VILLAGE</h2>
+    <p id="moutSurveyDescription" role="status"></p><div class="mout-survey-views" role="group" aria-label="Survey viewpoints">
+    <button id="moutViewvillage" class="btn" aria-pressed="true">Village overview</button><button id="moutViewcontainers" class="btn" aria-pressed="false">Container lane</button><button id="moutViewupper" class="btn" aria-pressed="false">Upper deck</button></div>
+    <p class="race-fine">View-only survey. No timer, shots, scores or rewards. Deploy starts a fresh 180-second drill at ground level.</p>
+    <div class="menu row"><button id="moutSurveyDeploy" class="btn primary">Deploy fresh drill</button><button id="moutSurveyBack" class="btn">Back to briefing</button></div></div>
   </section>
   <section id="moutPause" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL DRILL PAUSED / CLOCK STOPPED</div><h2 class="sheet-title">HOLD POSITION</h2><div class="menu"><button id="moutResume" class="btn primary">Resume drill</button><button id="moutAbort" class="btn">Abort to base</button></div></div></section>
   <section id="moutResult" class="screen hidden"><div class="sheet narrow mout-sheet"><div class="brief-phase">MOUT / AFTER-ACTION REPORT</div><h2 id="moutResultTitle" class="sheet-title">EXTRACTION COMPLETE</h2><p id="moutResultSummary" class="brief-text"></p><p id="moutResultStats" class="brief-text"></p><p id="moutAnalysis" class="race-fine"></p><p id="moutRecordStatus" class="race-fine" role="status"></p><p class="race-fine">Accuracy = threat hits / shots fired. Drill score rewards threats, accuracy and time remaining; each no-shoot hit deducts 250 points. Practice only · personal bests save on this device.</p><div class="menu row"><button id="moutRetry" class="btn primary">Run drill again</button><button id="moutResultBack" class="btn">Back to base</button></div></div></section>

@@ -1,3 +1,4 @@
+import {facadeSections,MOUT_WINDOW} from './mout-architecture.js';
 // Local target drill only: no network opponents, cloud rewards or ranked claims.
 export const MOUT_LIMIT=180;
 export const MOUT_MAGAZINE=12;
@@ -10,8 +11,7 @@ export function wallsFor(room){
   const x=room.side*4.25,y=room.y+1.4;
   return [
     {x:room.side*7,z:room.z,y,w:.16,h:2.8,d:8},
-    {x,z:room.z-4,y,w:5.5,h:2.8,d:.16},
-    {x,z:room.z+4,y,w:5.5,h:2.8,d:.16},
+    ...[-1,1].flatMap(side=>facadeSections(5.5,2.8,[MOUT_WINDOW]).map(p=>({x:x+p.u,z:room.z+side*4,y:room.y+p.y,w:p.w,h:p.h,d:.16}))),
     ...[-1,1].map(side=>({x:room.side*1.5,z:room.z+side*2.5,y,w:.16,h:2.8,d:3})),
     {x:room.side*1.5,z:room.z,y:room.y+2.65,w:.16,h:.3,d:2}
   ];

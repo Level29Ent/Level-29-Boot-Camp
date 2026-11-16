@@ -1,4 +1,6 @@
-const PASSPORT_KEY='b29:remembered-passport:v1';
+// Different Supabase projects have different identities. Never send the old
+// project's remembered code to a new backend or delete the original saved code.
+const PASSPORT_KEY='b29:remembered-passport:txrecpwlkdsyizulqnmn:v1';
 const TRAINING_KEY='b29:training:v1';
 // Only store the recovery code on a device the player trusts. Cloud profiles,
 // cash and XP still come from the server, never from editable local storage.

@@ -1,5 +1,5 @@
 import {rememberedPassport,rememberPassport} from './player-save.js';
-const ENDPOINT='https://rubtdmmdxjvforydjjcn.supabase.co/functions/v1/bootcamp-command';
+const ENDPOINT='https://txrecpwlkdsyizulqnmn.supabase.co/functions/v1/bootcamp-command';
 export const cloud={
   token:rememberedPassport(),remember:true,deviceError:false,deviceSaved:!!rememberedPassport(),profile:null,pending:null,revision:0,writes:0,change:0,
   async send(action,payload={},token=this.token){

@@ -120,7 +120,7 @@
       <div class="brief-phase">LEVEL 29 / RANKS & AVATAR KITS</div>
       <h2 class="sheet-title">121 WAYS TO STAND OUT.</h2>
       <p class="brief-text">Featured Level 29 Jester Mascot plus 12 palettes × 10 real 3D wearable designs: hats, caps, hair, shirts, hoodies and mascots. Free visual styles for your next race, training session or third-person War match. No stat boosts.</p>
-      <p class="race-fine">These styles save only in this browser and are visible on your screen. Other players will still see your cloud Armory kit until the multiplayer service supports sharing styles. Your rank and owned kits stay unchanged.</p>
+      <p class="race-fine">Guests save styles in this browser only. Signed-in players can select a style to save it online for their next deployment; guests keep local-only styles. Your rank and owned kits stay unchanged.</p>
       <div class="wardrobe-stage"><canvas id="wardrobeCanvas" aria-label="Rotating 3D clothing and material preview"></canvas><p id="wardrobeLabel" aria-live="polite">Select View in 3D to inspect a wearable.</p><button class="btn" id="wardrobeRotate">Pause rotation</button></div>
       <p id="avatarSelected" class="race-fine"></p>
       <label class="race-label" for="avatarPalette">FILTER BY PALETTE</label><select id="avatarPalette"></select>
@@ -129,7 +129,7 @@
       <div id="avatarStyles" class="order-grid"></div>
       <p id="avatarSaveStatus" class="race-fine" role="status"></p><button id="avatarReset" class="btn">Use cloud Armory kit instead</button>
       <h3 class="command-subhead">EARN YOUR STRIPES</h3>
-      <p class="brief-text">Rise through 10 ranks with cloud-awarded XP from races and War. Each 1,000 XP earns the next rank. Cosmetic kits change your appearance, never your combat stats.</p>
+      <p class="brief-text">Rise through 10 ranks with server-awarded XP from eligible War matches (online races are unranked). Each 1,000 XP earns the next rank. Cosmetic kits change your appearance, never your combat stats.</p>
       <p id="serviceProgress" class="race-fine" role="status"></p>
       <h3 class="command-subhead">RANK LADDER</h3><div id="rankLadder"></div>
       <h3 class="command-subhead">WEAR YOUR ACHIEVEMENTS</h3>
@@ -239,7 +239,7 @@
             <div class="race-label">RANDOM COURSE ROTATION</div>
             <p>All 100 courses shuffled each session. No repeats until all 100 are drawn. The host sets the rotation for friends. Course revealed at the start.</p>
           </div>
-          <button class="btn primary wide" id="raceSolo">Play now vs 7 bots — no login</button><p class="race-fine">Local practice starts immediately. Finish to save a personal best and translucent ghost in this browser, then retry the same course. No cloud cash or XP.</p><button class="btn wide" id="raceCloudSolo">Optional cloud race + rewards</button>
+          <button class="btn primary wide" id="raceSolo">Play now vs 7 bots — no login</button><p class="race-fine">Local practice starts immediately. Finish to save a personal best and translucent ghost in this browser, then retry the same course. No cloud cash or XP.</p><button class="btn wide" id="raceCloudSolo">Optional unranked cloud race</button>
           <p class="race-fine">Joystick, keyboard and gamepad supported. Fastest finish wins; otherwise furthest progress wins. Places 6–8 are disqualified at the buzzer, even if they finish.</p>
         </div>
         <div class="friend-panel">
@@ -275,23 +275,23 @@
     <div class="sheet war-sheet">
       <div class="brief-phase">LEVEL 29 / TACTICAL FIELD OPERATIONS</div>
       <div class="war-hero"><h2 class="sheet-title">HOLD YOUR GROUND.<br>BACK YOUR SQUAD.</h2><strong>5v5</strong></div>
-      <p class="war-description">Third-person, over-the-shoulder team combat. Two squads, one fortified training ground. Team elimination: first to 30, or highest score after three minutes. Local objective missions below use their own victory conditions. Respawns keep you in the fight.</p>
+      <p class="war-description">Third-person, over-the-shoulder team combat. Two squads, one fortified training ground. Team elimination: first to 30, or highest score after three minutes. Objective missions below use their own victory conditions. Respawns keep you in the fight.</p>
       <article class="field-operations">
-        <div class="brief-phase">NEW / LOCAL AI-SQUAD OPERATIONS</div>
+        <div class="brief-phase">NEW / FIELD OPERATIONS</div>
         <h3>THE SQUAD CRUCIBLE</h3>
         <p>Rally jump → carry supplies with your squad → clear the route → extract together. Or try capture, intel and supply escort on the fortified training ground.</p>
         <div class="operation-options"><label>MISSION<select id="localOperation"><option value="elimination">Team elimination</option><option value="crucible">Squad Crucible</option><option value="zones">Capture zone</option><option value="intel">Retrieve intel</option><option value="escort">Supply escort</option></select></label>
         <label>ROLE<select id="localRole"><option value="rifleman">Rifleman · instant reload</option><option value="medic">Medic · nearby healing</option><option value="engineer">Engineer · squad resupply</option><option value="scout">Scout · radar reveal</option></select></label></div>
-        <p class="race-fine">These selections apply only to Play local 5v5 below. One human with AI squadmates, not online co-op. Free balanced utility roles: F or the ability button, 25s cooldown. No cash or XP rewards.</p>
+        <p class="race-fine">Mission and role selections apply when creating local or online War matches. Online co-op needs the new Supabase backend deployed; local play uses AI squadmates. F or the ability button uses your role, with a 25s cooldown. Crucible and escort are co-op only. Local practice grants no cloud rewards.</p>
         <p id="localBadges" class="race-fine"></p><details><summary>Drill Instructor challenges</summary><p>Stand Your Ground: finish with zero deaths. No Wasted Rounds: land every shot (minimum eight). Back Your Squad: heal or resupply teammates twice. Badges save only in this browser, independently of cloud achievements.</p></details>
       </article>
       <div class="war-deployments">
         <article class="war-deployment blue-deployment"><div class="brief-phase">PVBOT / CO-OP</div><h3>YOU VS THE BATTALION</h3><p>Lead Alpha against five AI opponents. Bring up to four friends on your team, or let bots fill your squad.</p><button class="btn primary" id="warBots">Play local 5v5 — no login</button><p class="race-fine">Offline bot practice. No cloud cash or XP.</p><button class="btn" id="warCloudBots">Optional cloud match vs bots</button><button class="btn" id="warCreatePve">Create co-op room</button></article>
-        <article class="war-deployment red-deployment"><div class="brief-phase">PVP / TEAM WAR</div><h3>ALPHA VS BRAVO</h3><p>Compete with friends on opposing teams. Up to ten human players. AI reinforcements fill empty slots, five per side.</p><button class="btn primary" id="warCreatePvp">Host private PvP</button><button class="btn" id="warFind">Find public PvP lobby</button></article>
+        <article class="war-deployment red-deployment"><div class="brief-phase">PVP / TEAM WAR</div><h3>ALPHA VS BRAVO</h3><p>Compete with friends on opposing teams. Up to ten human players. AI reinforcements fill empty slots, five per side.</p><button class="btn primary" id="warCreatePvp">Host private PvP</button><button class="btn" id="warCreatePublic">Host public PvP</button><button class="btn" id="warFind">Find public PvP lobby</button></article>
       </div>
       <div class="war-join"><label for="warJoinCode">HAVE ORDERS?</label><input id="warJoinCode" maxlength="6" placeholder="ROOM CODE" aria-label="War room code" autocomplete="off"><button class="btn" id="warJoin">Join room</button><label class="war-audio-label" for="warAudio">FIELD AUDIO</label><select id="warAudio"><option value="both">Military beat + ambience</option><option value="music">Military beat</option><option value="ambience">War ambience</option><option value="off">Off</option></select></div>
       <p id="warStatus" role="status" aria-live="polite"></p>
-      <p class="race-fine">Joystick / WASD to move · click the arena for mouse-look (Esc releases) or drag to look · J / left mouse to fire · E / R reload · K / right mouse for shoulder aim · C crouch · Space jump · Shift sprint. Match cash requires 20 seconds of active play. No friendly fire.</p>
+      <p class="race-fine">Joystick / WASD to move · click the arena for mouse-look (Esc releases) or drag to look · J / left mouse to fire · E / R reload · K / right mouse for shoulder aim · C crouch · Space jump · Shift sprint. War match cash requires 20 seconds of server-verified active play. No friendly fire.</p>
       <div class="war-menu-footer"><button class="btn" id="warBack">Back to base</button><button class="btn" id="warMenuCommand">Command & rewards</button></div>
     </div>
   </section>
@@ -323,10 +323,10 @@
       <button class="btn primary wide" id="loginLocal">Save name & play</button><button class="btn wide" id="loginGuest">Play without saving</button>
       <p id="loginStatus" class="race-fine" role="status" aria-live="polite"></p>
       <details class="cloud-login"><summary>Optional cloud saves, rewards & online friends</summary>
-        <p class="race-fine">Cloud features need the external game service. If it is unavailable, use either play button above. Local practice never grants cloud rewards.</p>
+        <p class="race-fine">New server: create a new profile after the Supabase setup is deployed. Profiles from the old server cannot be restored here. Cloud features need the game service. If it is unavailable, use either play button above. Local practice never grants cloud rewards.</p>
         <label class="remember-choice"><input id="rememberLogin" type="checkbox" checked> Remember cloud sign-in on this trusted device</label>
         <button class="btn wide" id="loginCreate">Create optional cloud profile with this name</button>
-        <label class="race-label" for="loginCode">EXISTING PRIVATE RECOVERY CODE</label><input id="loginCode" type="password" maxlength="64" autocomplete="off" placeholder="Paste private recovery code">
+        <label class="race-label" for="loginCode">EXISTING PRIVATE RECOVERY CODE</label><input id="loginCode" type="password" maxlength="128" autocomplete="off" placeholder="Paste private recovery code">
         <button class="btn wide" id="loginRestore">Restore cloud profile</button>
       </details><button class="btn" id="loginBack">Back to base</button>
     </div>
@@ -351,7 +351,7 @@
       </div>
       <div data-command-panel="accomplishments" class="hidden"><h3 class="command-subhead">YOUR SERVICE RECORD</h3><p class="race-fine">Twelve permanent accomplishments. Claim each reward once when unlocked.</p><div class="order-grid" id="accomplishmentGrid"></div></div>
       <div data-command-panel="armory" class="hidden"><h3 class="command-subhead">EARNED. NOT BOUGHT WITH REAL MONEY.</h3><p class="race-fine">Spend field cash on cosmetic titles and nameplates. No damage upgrades. No pay-to-win.</p><div class="order-grid" id="armoryGrid"></div></div>
-      <div data-command-panel="profile" class="hidden"><h3 class="command-subhead">CASH ACTIVITY</h3><div id="cashHistory"></div><div class="profile-settings"><h3 class="command-subhead">CALLSIGN & PRIVATE PLAYER CODE</h3><div class="join-row"><input id="callsignEdit" maxlength="18" aria-label="Edit callsign"><button class="btn" id="saveCallsign">Save callsign</button></div><p>Cash, XP and match stats save automatically in the cloud. Completed training levels save only in this browser. Remembering this device stores your private sign-in code here; anyone using this browser can access your profile. Keep a recovery code for other devices or if browser data is cleared.</p><p id="profileSaveStatus" role="status"></p><label class="remember-choice"><input id="rememberProfile" type="checkbox" checked> Remember this device</label><button class="btn" id="forgetDevice">Forget this device</button><div class="join-row"><input id="playerCode" type="password" readonly aria-label="Your private player code" autocomplete="off"><button class="btn" id="revealPassport">Reveal code</button></div><button class="btn" id="copyPassport">Copy private recovery code</button><div class="join-row"><input id="passportInput" type="password" maxlength="64" placeholder="Private recovery code" aria-label="Player recovery code" autocomplete="off"><button class="btn" id="restorePassport">Restore profile</button></div></div></div>
+      <div data-command-panel="profile" class="hidden"><h3 class="command-subhead">CASH ACTIVITY</h3><div id="cashHistory"></div><div class="profile-settings"><h3 class="command-subhead">CALLSIGN & PRIVATE PLAYER CODE</h3><div class="join-row"><input id="callsignEdit" maxlength="18" aria-label="Edit callsign"><button class="btn" id="saveCallsign">Save callsign</button></div><p>Cash, XP and match stats save automatically in the cloud. Completed training levels save only in this browser. Remembering this device stores your private sign-in code here; anyone using this browser can access your profile. Keep a recovery code for other devices or if browser data is cleared.</p><p id="profileSaveStatus" role="status"></p><label class="remember-choice"><input id="rememberProfile" type="checkbox" checked> Remember this device</label><button class="btn" id="forgetDevice">Forget this device</button><div class="join-row"><input id="playerCode" type="password" readonly aria-label="Your private player code" autocomplete="off"><button class="btn" id="revealPassport">Reveal code</button></div><button class="btn" id="copyPassport">Copy private recovery code</button><div class="join-row"><input id="passportInput" type="password" maxlength="128" placeholder="Private recovery code" aria-label="Player recovery code" autocomplete="off"><button class="btn" id="restorePassport">Restore profile</button></div></div></div>
       <div class="command-bottom"><button class="btn" id="commandBack">Back to base</button><button class="btn" id="refreshProfile">Refresh cloud save</button><small>Field Cash is virtual game currency. No purchase, transfer, cash-out, or real-money value.</small></div>
     </div>
   </section>

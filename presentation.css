@@ -33,3 +33,15 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 @media(max-width:700px){#squadCommands{bottom:345px;left:10px;max-width:230px;padding:7px}#squadCommands button{font-size:11px;padding:6px;min-height:36px}#fieldSettings .sheet{padding:18px}#fieldSettings label{margin:12px 0}#fieldSettings .sheet-title{font-size:34px}}
 @media(max-height:500px){#squadCommands{left:auto;right:10px;bottom:180px;max-width:220px}#fieldSettings{display:block}#fieldSettings .sheet{margin:auto}#fieldSettings label{margin:10px 0}}
 #fieldSettings .sheet{max-height:calc(100dvh - 36px);overflow-y:auto}
+
+.practice-lab h3{color:#9ee0d6}.practice-lab .remember-choice{margin:16px 0}
+#practiceHudLabel{position:absolute;left:50%;top:108px;transform:translateX(-50%);max-width:70vw;background:#101c20df;color:#c4dfd5;padding:5px 10px;text-align:center;font-size:11px;pointer-events:none}
+#practiceHudLabel:empty{display:none}
+.mission-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:20px 0}
+.mission-stat{background:#21312f;border:1px solid #73887a;padding:16px;display:grid;gap:8px}
+.mission-stat strong{font-size:26px;color:#e6cb86}.mission-stat span{font-size:13px;color:#c1d4cc}
+.mission-history{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0}
+#missionBoard h3{margin:20px 0 12px;color:#d9c38c}.mission-campaign{padding-left:20px;line-height:2.4}
+.mission-campaign .btn{font-size:12px;padding:6px 10px;min-width:0;margin-left:10px}
+#missionLogFilter{display:block;padding:10px;margin:10px 0;background:#142323;color:#f4edda;max-width:100%;font:inherit}
+@media(max-width:700px){#practiceHudLabel{top:142px;max-width:none;width:88vw;font-size:10px}body.war-active #operationStatus{top:177px}.mission-history{grid-template-columns:1fr}}

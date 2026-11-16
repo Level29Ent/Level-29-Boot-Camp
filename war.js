@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {practiceConfig,practiceSummary,standardPractice,saveMission,missionLog,bestMission} from './practice-lab.js';
 import {createModeLifecycle} from './mode-lifecycle.js';
 import {afterAction,recordCareer} from './career.js';
 import {dressField,feedback,dressAtmosphere} from './presentation.js';
@@ -10,7 +11,7 @@ import {createWarPractice} from './war-practice.js';
 import {cleanCallsign} from './local-player.js';
 import {selectedStyle,styleFor} from './avatar-styles.js';
 import {thirdPersonView} from './war-view.js';
-import {WAR_COVER,WAR_DURATION,WAR_TARGET,COSMETICS,rankFor} from './rules.js';
+import {WAR_COVER,WAR_DURATION,COSMETICS,rankFor} from './rules.js';
 import {FieldAudio} from './race-audio.js';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -20,6 +21,9 @@ export function initWar(api){
   const w={active:false,room:null};let practice=null,practiceClock=0;let timer=null,busy=false,ended=false,clockOffset=0,bestRtt=Infinity;
   let seq=0,models=new Map(),visual=new THREE.Vector3(),lastEvents=new Set(),tracers=[],fireMouse=false;
   let lastInput={},lastUi=0,lastNetwork=0,refreshing=false;
+  let lastPractice=null;
+  const selectedPractice=()=>practiceConfig({difficulty:$('practiceDifficulty').value,duration:+$('practiceDuration').value,target:+$('practiceTarget').value,infiniteAmmo:$('practiceInfiniteAmmo').checked});
+  const duration=()=>practice?w.room.duration:WAR_DURATION;
   let objectiveMarker=null,pendingAbility=false,pendingOrder=null;
   let pendingJump=false,pendingReload=false,pendingFire=false,lastRtt=0;
   const audio=new FieldAudio();audio.volume=.22;
@@ -60,11 +64,21 @@ export function initWar(api){
     catch(e){if(lifecycle.valid(ticket)&&!e.staleSession)message(e.message);}
     finally{button.disabled=false;}
   }
-  $('warBots').onclick=()=>{
-    const name=cleanCallsign($('racerName').value);w.exit();practiceClock=Date.now();pendingAbility=false;pendingOrder=null;lastInput={};
-    practice=createWarPractice(name,{now:()=>practiceClock,equipped:cloud.profile?.equipped,xp:cloud.profile?.xp,operation:$('localOperation').value,role:$('localRole').value});
+  function launchPractice(setup){
+    const name=cleanCallsign($('racerName').value);w.exit();api.stopRace();ended=false;practiceClock=Date.now();pendingAbility=false;pendingOrder=null;lastInput={};
+    lastPractice={operation:setup.operation,role:setup.role,config:practiceConfig(setup.config)};
+    practice=createWarPractice(name,{now:()=>practiceClock,equipped:cloud.profile?.equipped,xp:cloud.profile?.xp,...lastPractice});
     apply(practice.state);poll();
+  }
+  const previewPractice=()=>{
+    const operation=$('localOperation').value;$('practiceTarget').disabled=operation!=='elimination';
+    $('practiceSummary').textContent=practiceSummary(selectedPractice(),operation)+' · '+(standardPractice(selectedPractice())?'Standard practice: local medals/badges eligible.':'Custom practice: records only; medals and badges disabled.')+' Online rooms ignore these local settings.';
   };
+  for(const id of ['practiceDifficulty','practiceDuration','practiceTarget','practiceInfiniteAmmo','localOperation'])$(id).addEventListener('change',previewPractice);
+  $('practiceReset').onclick=()=>{$('practiceDifficulty').value='standard';$('practiceDuration').value='180';$('practiceTarget').value='30';$('practiceInfiniteAmmo').checked=false;previewPractice();};
+  $('warBots').onclick=()=>launchPractice({operation:$('localOperation').value,role:$('localRole').value,config:selectedPractice()});
+  $('warRetryPractice').onclick=()=>{if(lastPractice)launchPractice(lastPractice);};
+  previewPractice();
   $('warCloudBots').onclick=()=>prepare($('warCloudBots'),async()=>{
     w.room=await request('war_create',{mode:'pve',operation:$('localOperation').value,role:$('localRole').value});
     apply(await request('room_start',{code:w.room.code}));poll();
@@ -299,7 +313,7 @@ export function initWar(api){
     tracers=tracers.filter(t=>{if(t.age>.14){api.world.remove(t.line);t.line.geometry.dispose();t.line.material.dispose();return false;}return true;});
     audio.tick(dt,api.muted());
     lastUi+=dt;if(lastUi>.08){renderUi();lastUi=0;}
-    if(elapsed()>WAR_DURATION+2&&!refreshing){refreshing=true;pollOnce().finally(()=>refreshing=false);}
+    if(elapsed()>duration()+2&&!refreshing){refreshing=true;pollOnce().finally(()=>refreshing=false);}
   };
   function renderUi(){
     const room=w.room,own=me();if(!own)return;
@@ -307,11 +321,12 @@ export function initWar(api){
     const captain=room.players.filter(p=>p.team===own.team&&!p.bot&&p.connected!==false).sort((a,b)=>a.slot-b.slot)[0];
     $('squadOrderStatus').textContent=(captain?.id===own.id?'SQUAD LEADER':'LEADER: '+(captain?.name||'None'))+' · '+(room.orders?.[own.team]?.kind||'push').toUpperCase();
     for(const id of ['squadFollow','squadHold','squadPush'])$(id).disabled=captain?.id!==own.id||own.hp<=0;
-    $('warWinRule').textContent=objective?OPERATIONS[objective.id].name.toUpperCase():'FIRST TO 30';
+    $('warWinRule').textContent=practice&&objective?.id==='elimination'?'FIRST TO '+w.room.practiceConfig.target:objective?OPERATIONS[objective.id].name.toUpperCase():'FIRST TO 30';
+    $('practiceHudLabel').textContent=practice?practiceSummary(w.room.practiceConfig,objective?.id):'';
     $('operationStatus').textContent=objective?objective.text+(objective.hold?' · '+objective.hold.toFixed(1)+'/5s':''):'';
     if(objectiveMarker){objectiveMarker.position.set(objective.x,.15,objective.z);}
     if(objective){const wait=Math.max(0,Math.ceil(((own.abilityAt||0)-now())/1000));$('roleAbility').textContent=ROLES[own.role].name+' · '+(wait?wait+'s':'F / ABILITY');$('roleAbility').disabled=wait>0||own.hp<=0;$('roleAbility').title=ROLES[own.role].ability;}
-    const t=elapsed(),remaining=Math.ceil(Math.max(0,WAR_DURATION-Math.max(0,t)));
+    const t=elapsed(),remaining=Math.ceil(Math.max(0,duration()-Math.max(0,t)));
     $('warTimer').textContent=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
     $('blueScore').textContent=Math.floor(room.scores.blue);$('redScore').textContent=Math.floor(room.scores.red);
     $('warHealth').textContent=own.hp;$('warAmmo').textContent=own.reloadAt?'RELOADING':own.ammo+' / 30';
@@ -345,15 +360,20 @@ export function initWar(api){
     $('warResultRoster').innerHTML=w.room.players.slice().sort((a,b)=>b.kills-a.kills).map(p=>
       `<div class="war-result-player ${p.id===w.room.me?'is-you':''}"><span class="${p.team}">${esc(p.name)}${p.bot?' · AI':''}</span><b>${p.kills} / ${p.deaths}</b></div>`).join('');
     $('warAnalysis').textContent=afterAction({mode:'war',...own,objectiveSeconds:own.objectiveSeconds||0,success:['escort','crucible'].includes(w.room.objective?.id)?!!w.room.objective.won:ownScore>other});
-    $('warDrillReport').textContent='';
+    $('warDrillReport').textContent='';$('warPracticeRecord').textContent='';$('warRetryPractice').classList.toggle('hidden',!practice);
     if(practice){
       const o=w.room.objective,success=o.id==='elimination'||o.id==='zones'||o.id==='intel'?ownScore>other:o.won;
       $('warResultHeading').textContent=success?'MISSION COMPLETE':'MISSION INCOMPLETE';
       $('warResultSummary').textContent=OPERATIONS[o.id].name+' · Alpha '+Math.floor(ownScore)+' / Bravo '+Math.floor(other)+' · '+own.kills+' eliminations · '+own.deaths+' deaths';
-      const medals=recordCareer({mode:'war',local:true,support:own.support||0,objectiveSeconds:own.objectiveSeconds||0});
-      $('warAnalysis').textContent+=' · '+(medals.saved?'Medals saved locally.':'Medals not saved: storage unavailable.');
-      const challenges=drillChallenges(own,true),saved=saveBadges(challenges.filter(c=>c.done).map(c=>c.id));
-      $('warDrillReport').textContent='DRILL INSTRUCTOR: '+challenges.map(c=>(c.done?'✓ ':'— ')+c.name).join(' · ')+(saved?' · Badges saved in this browser.':' · Storage unavailable; badges not saved.');
+      const config=w.room.practiceConfig,record={operation:o.id,role:own.role,config,success:!!success,elapsed:Math.min(duration(),Math.max(0,elapsed())),timestamp:Date.now(),shots:own.shots,hits:own.hits,kills:own.kills,deaths:own.deaths,support:own.support||0,objectiveSeconds:Math.min(duration(),own.objectiveSeconds||0)};
+      const old=bestMission(missionLog(),config,o.id),saved=saveMission(record);
+      $('warPracticeRecord').textContent=practiceSummary(config,o.id)+' · '+(saved.saved?'Mission saved on this device.':'Storage unavailable: mission not saved.')+(success&&(!old||record.elapsed<old.elapsed)?' New fastest win for these exact rules.':'');
+      if(standardPractice(config)){
+        const medals=recordCareer({mode:'war',local:true,support:own.support||0,objectiveSeconds:own.objectiveSeconds||0});
+        $('warAnalysis').textContent+=' · '+(medals.saved?'Medals saved locally.':'Medals not saved: storage unavailable.');
+        const challenges=drillChallenges(own,true),savedBadges=saveBadges(challenges.filter(c=>c.done).map(c=>c.id));
+        $('warDrillReport').textContent='DRILL INSTRUCTOR: '+challenges.map(c=>(c.done?'✓ ':'— ')+c.name).join(' · ')+(savedBadges?' · Badges saved in this browser.':' · Storage unavailable; badges not saved.');
+      }else $('warDrillReport').textContent='Custom practice: no local medals or Drill Instructor badges. Restore standard settings to earn them.';
       $('warRewardText').textContent='Local AI-squad practice complete. No cloud cash, XP or leaderboard scores awarded.';return;}
     const ticket=lifecycle.current();
     $('warRewardText').textContent='Syncing match earnings…';
@@ -365,6 +385,6 @@ export function initWar(api){
   }
   w.text=()=>({active:w.active,room:w.room?.code,kind:w.room?.mode,elapsed:+elapsed().toFixed(2),
     scores:w.room?.scores,me:me(),players:w.room?.players.map(({id,name,team,bot,hp,x,y,z,kills,deaths})=>({id,name,team,bot,hp,x,y,z,kills,deaths})),
-    input:lastInput,view:'third-person',ended,cloud:!practice,practice:!!practice});
+    config:practice?w.room?.practiceConfig:null,duration:duration(),input:lastInput,view:'third-person',ended,cloud:!practice,practice:!!practice});
   return w;
 }

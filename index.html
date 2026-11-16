@@ -87,7 +87,7 @@
       <p class="tagline">Race. Fight. Earn your stripes.<br>100 courses · 5v5 war · daily field cash.</p>
       <div class="profile-strip"><span id="titleRank">RECRUIT</span><span id="titleWallet">CLOUD PLAYER DOSSIER</span><button id="profileShortcut">Save name / play</button></div>
       <div class="menu">
-        <button class="btn primary" id="btnGuided">Guided First Mission</button><button class="btn" id="btnDailyTraining">Daily Training</button><button class="btn primary" id="btnWar">5v5 War</button>
+        <button class="btn primary" id="btnGuided">Guided First Mission</button><button class="btn" id="btnDailyTraining">Daily Training</button><button class="btn" id="btnMissionBoard">Mission Records</button><button class="btn primary" id="btnWar">5v5 War</button>
         <button class="btn" id="btnMout">MOUT Shoot House</button>
         <button class="btn" id="btnRace">60-Second Races</button>
         <button class="btn" id="btnCommand">Command & Rewards</button>
@@ -99,6 +99,17 @@
     </div>
   </section>
 
+  <section id="missionBoard" class="screen hidden"><div class="sheet command-sheet">
+    <div class="brief-phase">THIS BROWSER / UNRANKED PERSONAL RECORDS</div><h2 class="sheet-title">YOUR FIELD DOSSIER</h2>
+    <p class="race-fine">A personal board, not a global leaderboard. Data is shared by players of this browser and disappears when site data is cleared. No cloud accounts, cash or XP are changed. Only the latest 20 finished local War missions are retained.</p>
+    <div id="missionBoardStats" class="mission-stats"></div><p id="missionBoardMout" class="brief-text"></p>
+    <h3>TOP CAMPAIGN SCORES</h3><ul id="missionBoardCampaign" class="mission-campaign"></ul>
+    <h3>RACE PERSONAL BESTS</h3><p id="missionBoardRaces" class="race-fine"></p>
+    <h3>RECENT LOCAL WAR MISSIONS</h3><label for="missionLogFilter">FILTER BY MISSION</label><select id="missionLogFilter"><option value="">All missions</option></select>
+    <div id="missionHistory" class="mission-history"></div>
+    <button id="missionExport" class="btn">Download local War history (JSON)</button><p id="missionExportStatus" class="race-fine" role="status"></p>
+    <button id="missionBoardBack" class="btn primary">Back to base</button>
+  </div></section>
   <section id="dailyTraining" class="screen hidden"><div class="sheet command-sheet"><div class="brief-phase">DAILY TRAINING / DEVICE-LOCAL</div><h2 class="sheet-title">TODAY’S ORDERS</h2><p id="dailyTrainingDate" class="race-fine"></p><label class="remember-choice"><input id="dailyModifiers" type="checkbox" checked> Enable optional difficulty modifiers</label><p class="race-fine">Replay existing training with new goals. Daily runs do not overwrite campaign records. Progress resets with the UTC date and stays on this device.</p><div id="dailyTrainingList" class="command-grid"></div><button id="dailyTrainingBack" class="btn">Back to base</button></div></section>
   <section id="moutBrief" class="screen hidden">
     <div class="sheet narrow mout-sheet"><div class="brief-phase">LOCAL TACTICAL TRAINING / SOLO TARGET DRILL</div>
@@ -294,6 +305,17 @@
         <p class="race-fine">Mission and role selections apply when creating local or online War matches. Online co-op needs the new Supabase backend deployed; local play uses AI squadmates. F or the ability button uses your role, with a 25s cooldown. Crucible and escort are co-op only. Local practice grants no cloud rewards.</p>
         <p id="localBadges" class="race-fine"></p><details><summary>Drill Instructor challenges</summary><p>Stand Your Ground: finish with zero deaths. No Wasted Rounds: land every shot (minimum eight). Back Your Squad: heal or resupply teammates twice. Badges save only in this browser, independently of cloud achievements.</p></details>
       </article>
+      <article class="field-operations practice-lab" aria-labelledby="practiceLabTitle">
+        <div class="brief-phase">LOCAL ONLY / PRACTICE LAB</div><h3 id="practiceLabTitle">TRAIN ON YOUR TERMS</h3>
+        <div class="operation-options">
+          <label for="practiceDifficulty">ENEMY BOT DIFFICULTY<select id="practiceDifficulty"><option value="recruit">Recruit · more reaction time</option><option value="standard" selected>Regular · standard practice</option><option value="veteran">Veteran · faster, more accurate</option></select></label>
+          <label for="practiceDuration">MATCH LENGTH<select id="practiceDuration"><option value="60">1 minute</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option></select></label>
+          <label for="practiceTarget">ELIMINATION GOAL<select id="practiceTarget"><option value="15">15 eliminations</option><option value="30" selected>30 eliminations</option><option value="50">50 eliminations</option></select></label>
+        </div>
+        <label class="remember-choice"><input id="practiceInfiniteAmmo" type="checkbox"> Infinite player ammo · aiming practice only</label>
+        <p class="race-fine">Enemy difficulty changes reaction time, shot spread, firing cadence and movement—not health or damage. Allies stay at Regular. Objective win conditions are unchanged; elimination goal applies only to team elimination.</p>
+        <p id="practiceSummary" class="race-fine" role="status"></p><button id="practiceReset" class="btn">Restore standard practice</button>
+      </article>
       <div class="war-deployments">
         <article class="war-deployment blue-deployment"><div class="brief-phase">PVBOT / CO-OP</div><h3>YOU VS THE BATTALION</h3><p>Lead Alpha against five AI opponents. Bring up to four friends on your team, or let bots fill your squad.</p><button class="btn primary" id="warBots">Play local 5v5 — no login</button><p class="race-fine">Offline bot practice. No cloud cash or XP.</p><button class="btn" id="warCloudBots">Optional cloud match vs bots</button><button class="btn" id="warCreatePve">Create co-op room</button></article>
         <article class="war-deployment red-deployment"><div class="brief-phase">PVP / TEAM WAR</div><h3>ALPHA VS BRAVO</h3><p>Compete with friends on opposing teams. Up to ten human players. AI reinforcements fill empty slots, five per side.</p><button class="btn primary" id="warCreatePvp">Host private PvP</button><button class="btn" id="warCreatePublic">Host public PvP</button><button class="btn" id="warFind">Find public PvP lobby</button></article>
@@ -311,11 +333,11 @@
     <div class="sheet narrow"><div class="brief-phase">LIVE OPERATION</div><h2 class="sheet-title" id="warExitHeading">YOUR SQUAD IS STILL FIGHTING</h2><p class="brief-text" id="warExitNote">Online matches do not pause. Return to the fight or leave this operation.</p><div class="menu"><button class="btn primary" id="warStay">Back to the fight</button><button class="btn" id="warLeaveConfirm">Leave match</button></div></div>
   </section>
   <section id="warResult" class="screen hidden">
-    <div class="sheet narrow"><div class="brief-phase">5v5 / AFTER-ACTION REPORT</div><h2 class="sheet-title" id="warResultHeading">SQUAD VICTORY</h2><p id="warResultSummary" class="brief-text"></p><p id="warRewardText" class="race-fine" role="status"></p><p id="warAnalysis" class="race-fine"></p><p id="warDrillReport" class="race-fine"></p><div id="warResultRoster"></div><div class="menu row"><button id="warAgain" class="btn primary">Redeploy</button><button id="warResultCommand" class="btn">Collect rewards</button><button id="warResultTitleBack" class="btn">Base</button></div></div>
+    <div class="sheet narrow"><div class="brief-phase">5v5 / AFTER-ACTION REPORT</div><h2 class="sheet-title" id="warResultHeading">SQUAD VICTORY</h2><p id="warResultSummary" class="brief-text"></p><p id="warRewardText" class="race-fine" role="status"></p><p id="warPracticeRecord" class="race-fine" role="status"></p><p id="warAnalysis" class="race-fine"></p><p id="warDrillReport" class="race-fine"></p><div id="warResultRoster"></div><div class="menu row"><button id="warRetryPractice" class="btn primary hidden">Retry same practice rules</button><button id="warAgain" class="btn primary">Redeploy</button><button id="warResultCommand" class="btn">Collect rewards</button><button id="warResultTitleBack" class="btn">Base</button></div></div>
   </section>
   <div id="warHud" class="hidden">
     <div class="war-top"><div class="war-team-score blue"><span>ALPHA</span><strong id="blueScore">0</strong></div><div class="war-clock"><strong id="warTimer">3:00</strong><small id="warWinRule">FIRST TO 30</small></div><div class="war-team-score red"><strong id="redScore">0</strong><span>BRAVO</span></div></div>
-    <div id="warModeBadge">PVBOT / ALPHA</div><div id="warNetwork" role="status">CLOUD LIVE</div><div class="war-hud-buttons"><button id="warShowScores">Scores</button><button id="warLeave">Exit</button></div>
+    <div id="practiceHudLabel"></div><div id="warModeBadge">PVBOT / ALPHA</div><div id="warNetwork" role="status">CLOUD LIVE</div><div class="war-hud-buttons"><button id="warShowScores">Scores</button><button id="warLeave">Exit</button></div>
     <canvas id="warRadar" width="192" height="224" aria-label="Battlefield radar: blue allies, red enemies, gold player"></canvas>
     <div id="operationStatus" role="status"></div><button id="roleAbility" class="hidden">F / ABILITY</button><div id="warKillfeed"></div><div id="warReticle"></div>
     <div class="war-vitals"><div><small>HEALTH</small><strong id="warHealth">100</strong><div class="war-hp-track"><i id="warHealthBar"></i></div></div><div><small>RIFLE / AMMO</small><strong id="warAmmo">30 / 30</strong></div><div id="warPersonalScore">0 ELIMS / 0 DEATHS</div></div>

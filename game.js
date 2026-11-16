@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {initMissionBoard} from './mission-board.js';
 import {dailyTraining,readCareer,recordCareer,afterAction} from './career.js';
 import {GUIDED_LESSON,modifierLabel} from './training-briefs.js';
 import {initPresentation,dressField,feedback,dressAtmosphere,updateAtmosphere,resetAtmosphere} from './presentation.js';
@@ -352,4 +353,5 @@ window.render_game_to_text=()=>{const detail=war.active?war.text():null;return J
 window.__race=race;
 window.__war=war;
 window.__mout=mout;
+initMissionBoard({stopModes:()=>{mout.exit();war.exit();race.exit();},setMode:m=>{mode=m;},show:showScreen,title,playTraining:id=>brief(id)});
 buildLevel(0);title();initWardrobeView();window.appReady=true;

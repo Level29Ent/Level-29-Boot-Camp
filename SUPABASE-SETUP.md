@@ -63,3 +63,7 @@ npx supabase@3.1.0 functions deploy bootcamp-command --remote=txrecpwlkdsyizulqn
 ```
 
 Then test two independent players in co-op: the lowest connected team slot may issue Follow/Hold/Push to AI allies, the other human must not override it, Hold remains anchored, and reload/low-health behavior may take priority. Observe objective-time and accuracy reports after finishing the match. Existing client-only medal cosmetics must **not** be accepted as cloud appearance updates. There is no new database reset, key exchange or schema change for this update. Remote deployment and real two-device verification remain the owner's required steps, not completed by this PR.
+
+
+## Applying the reliability audit
+After merging/pulling the reliability patch, redeploy the existing function with the same authenticated CLI command above (no database reset/migration). Verify all-human Crucible: one teammate at supply delivery, two at extraction; disconnected/dead helpers must not count. In War, confirm movements are not applied before request arrival, bots stay on their next route waypoint rather than drifting past, and leave/re-enter requests do not reopen a closed mode. Old room route-cache shapes are automatically recomputed. These hosted checks remain required; the assistant tested deterministic/local fixtures, not this remote project.

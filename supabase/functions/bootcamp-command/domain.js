@@ -105,15 +105,15 @@ function shoot(room,p,yaw,pitch,time){
 }
 // Bounded BFS routes around cover; no mesh/assets or client positions are trusted.
 function botDirection(p,goal){
-  if(Math.hypot(goal.x-p.x,goal.z-p.z)<1.7)return {dx:0,dz:0};
+  if(Math.hypot(goal.x-p.x,goal.z-p.z)<1.7)return {x:p.x,z:p.z};
   const start=[Math.round(p.x),Math.round(p.z)],queue=[start],parents=new Map([[start.join(','),null]]);let found;
   for(let i=0;i<queue.length&&i<3200;i++){
     const a=queue[i];if(Math.hypot(a[0]-goal.x,a[1]-goal.z)<1.5){found=a;break;}
     for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const n=[a[0]+dx,a[1]+dz],key=n.join(',');if(blocked(...n)||parents.has(key))continue;parents.set(key,a);queue.push(n);}
   }
-  if(!found)return {dx:0,dz:0};
+  if(!found)return {x:p.x,z:p.z};
   while(parents.get(found.join(','))&&parents.get(found.join(',')).join(',')!==start.join(','))found=parents.get(found.join(','));
-  return {dx:found[0]-p.x,dz:found[1]-p.z};
+  return {x:found[0],z:found[1]};
 }
 export function acceptInput(room,id,input,time){
   const p=room.players.find(q=>q.id===id&&!q.bot);if(!p)fail('Join this room first.',403);
@@ -140,10 +140,10 @@ export function tickRoom(room,time){
         if(plan.reload&&!p.reloadAt&&p.ammo<30)p.reloadAt=cursor+1400;
         const enemy=plan.enemy;
         if(enemy){const dist=Math.hypot(enemy.x-p.x,enemy.z-p.z);p.yaw=Math.atan2(p.x-enemy.x,p.z-enemy.z);if(plan.fire)shoot(room,p,p.yaw,Math.atan2(enemy.y+.9-(p.y+1.65),dist),cursor);}
-        if(!p.route||cursor>p.routeAt){p.route=botDirection(p,plan.goal);p.routeAt=cursor+700;}
-        move(room,p,p.route.dx,p.route.dz,3,dt);
+        if(!p.route||!Number.isFinite(p.route.x)||cursor>p.routeAt||Math.hypot(p.route.x-p.x,p.route.z-p.z)<.15){p.route=botDirection(p,plan.goal);p.routeAt=cursor+700;}
+        const dx=p.route.x-p.x,dz=p.route.z-p.z;move(room,p,dx,dz,3,dt);
       }else{
-        const input=cursor-p.inputAt<500?p.input:{};
+        const age=cursor-p.inputAt,input=age>=0&&age<500?p.input:{};
         p.yaw=input.yaw??p.yaw;p.crouch=!!input.crouch;
         if(input.jump&&p.y===0){p.velocity=5.5;p.input.jump=false;}
         p.velocity-=17*dt;p.y=Math.max(0,p.y+p.velocity*dt);if(p.y===0)p.velocity=0;

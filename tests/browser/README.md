@@ -34,3 +34,13 @@ NODE_PATH=/tmp/bootcamp-browser-check/node_modules node tests/browser/local-resp
 ```
 
 These measure actual visible panel/reticle rectangles and assert no >2px intersections or offscreen rectangles among the listed selectors at 1280×800, 390×844, 844×390, 320×568, 568×320, 667×375 and 1024×600, with touch controls enabled. Intentional overlays (dialogs/countdown/respawn) are excluded. Lists live in the script so failures identify which two regions collide. They are renderer-stub layout assertions, not screenshots or universal proof for every text/font/zoom/device. The local-response check asserts player movement and ammo change within one 16ms simulation step, tactical-score pause/escape behavior and input isolation in pause/options.
+
+Input ownership/button-chord regressions (same local server/tooling, renderer stub):
+
+```sh
+NODE_PATH=/tmp/bootcamp-browser-check/node_modules node tests/browser/gameplay-input-edges.cjs
+NODE_PATH=/tmp/bootcamp-browser-check/node_modules node tests/browser/mouse-chord.cjs
+NODE_PATH=/tmp/bootcamp-browser-check/node_modules node tests/browser/mout-mouse-chord.cjs
+```
+
+The first verifies mouse-fire release does not cancel held keyboard ADS, disabling the touch stick clears only touch input, and a simulated controller unplug stops its held movement. The other two use actual Playwright mouse button sequences: hold right aim, press/release left fire, keep right held. War/MOUT must fire during the chord and stop when left is released without exiting aim. These checks do not certify a physical controller, touch OS behavior or hardware input latency. No cloud credentials are needed.

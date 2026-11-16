@@ -1,5 +1,5 @@
 import {WAR_COVER} from './rules.js';
-import {objectiveDestination} from './operations.js';
+import {objectiveDestination,activeParticipant} from './operations.js';
 export const SQUAD_ORDERS=['follow','hold','push'];
 export const validOrder=order=>SQUAD_ORDERS.includes(order);
 export function clearSight(a,b){
@@ -10,13 +10,13 @@ export function clearSight(a,b){
 }
 const open=p=>Math.abs(p.x)<21&&Math.abs(p.z)<31&&!WAR_COVER.some(c=>Math.abs(p.x-c.x)<c.w/2+.65&&Math.abs(p.z-c.z)<c.d/2+.65);
 export function setSquadOrder(room,leader,order,time){
-  if(!validOrder(order)||leader.bot||leader.hp<=0||room.endedAt)return false;
+  if(!validOrder(order)||leader.bot||!activeParticipant(leader)||room.endedAt)return false;
   const captain=room.players.filter(p=>p.team===leader.team&&!p.bot&&p.connected!==false).sort((a,b)=>a.slot-b.slot)[0];
   if(captain?.id!==leader.id)return false;
   room.orders??={};room.orders[leader.team]={kind:order,leader:leader.id,x:leader.x,z:leader.z,at:time};return true;
 }
 export function botPlan(room,p,time){
-  const enemies=room.players.filter(q=>q.team!==p.team&&q.hp>0),visible=enemies.filter(q=>Math.hypot(q.x-p.x,q.z-p.z)<38&&clearSight(p,q)).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
+  const enemies=room.players.filter(q=>q.team!==p.team&&activeParticipant(q)),visible=enemies.filter(q=>Math.hypot(q.x-p.x,q.z-p.z)<38&&clearSight(p,q)).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
   const enemy=visible[0];
   if(enemy){p.memory={x:enemy.x,z:enemy.z,until:time+3000};}
   else{
@@ -46,5 +46,5 @@ export function botPlan(room,p,time){
 }
 export function objectiveActivity(room,dt){
   if(room.objective.id==='elimination')return;
-  for(const p of room.players)if(p.hp>0&&Math.hypot(p.x-room.objective.x,p.z-room.objective.z)<5)p.objectiveSeconds=(p.objectiveSeconds||0)+dt;
+  for(const p of room.players)if(activeParticipant(p)&&Math.hypot(p.x-room.objective.x,p.z-room.objective.z)<5)p.objectiveSeconds=(p.objectiveSeconds||0)+dt;
 }

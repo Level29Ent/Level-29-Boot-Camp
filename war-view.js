@@ -29,7 +29,7 @@ export function thirdPersonView(position,yaw,pitch,aiming,crouch,players=[],ownI
   // make the player's shot travel through the wall in front of their rifle.
   const aimRay=new THREE.Ray(camera,direction),target=camera.clone().addScaledVector(direction,90);
   let nearest=90;
-  const targets=[...cover,...players.filter(p=>p.id!==ownId&&p.hp>0).map(p=>new THREE.Box3(
+  const targets=[...cover,...players.filter(p=>p.id!==ownId&&p.hp>0&&p.connected!==false).map(p=>new THREE.Box3(
     new THREE.Vector3(p.x-.4,p.y,p.z-.4),new THREE.Vector3(p.x+.4,p.y+(p.crouch?1.3:2),p.z+.4)))];
   for(const box of targets){
     const hit=aimRay.intersectBox(box,new THREE.Vector3());

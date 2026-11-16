@@ -13,9 +13,10 @@ export const ROLES={
   scout:{name:'Scout',ability:'Reveal enemies on radar for 8 seconds'},
   rifleman:{name:'Rifleman',ability:'Instant combat reload'}
 };
-const near=(p,q,r=4)=>p.hp>0&&Math.hypot(p.x-q.x,p.z-q.z)<r;
+export const activeParticipant=p=>p.hp>0&&p.connected!==false;
+const near=(p,q,r=4)=>activeParticipant(p)&&Math.hypot(p.x-q.x,p.z-q.z)<r;
 export function createObjective(mode='elimination'){
-  const id=OPERATIONS[mode]?mode:'elimination';
+  const id=Object.hasOwn(OPERATIONS,mode)?mode:'elimination';
   return {id,x:id==='intel'?10:0,z:id==='intel'?0:id==='escort'?24:id==='crucible'?20:12,stage:0,hold:0,carrier:null,progress:0,won:false,
     text: id==='crucible'?'Jump through the gold rally marker':id==='intel'?'Collect midfield intel, return it to your base':id==='escort'?'Escort supply truck to the north gate; enemies contest within 5m':id==='zones'?'Hold the gold zone uncontested to earn 60 points':'First squad to 30 eliminations'};
 }
@@ -25,6 +26,12 @@ export function objectiveDestination(o,p,players){
     return carrier?(carrier.id===p.id?{x:0,z:p.team==='blue'?27:-27}:carrier):o;
   }
   return o;
+}
+// Invoke before respawn/movement, not after the carrier has been relocated.
+export function dropIntel(objective,player){
+  if(objective.id!=='intel'||objective.carrier!==player.id)return false;
+  objective.x=player.x;objective.z=player.z;objective.carrier=null;
+  objective.text='Intel dropped · collect and return it to your base';return true;
 }
 export function stepObjective(o,players,scores,dt){
   if(o.id==='elimination'||o.won)return;
@@ -37,7 +44,7 @@ export function stepObjective(o,players,scores,dt){
   }
   if(o.id==='intel'){
     let carrier=players.find(p=>p.id===o.carrier);
-    if(carrier&&carrier.hp<=0){o.x=carrier.x;o.z=carrier.z;o.carrier=null;carrier=null;}
+    if(o.carrier&&(!carrier||!activeParticipant(carrier))){if(carrier)dropIntel(o,carrier);else o.carrier=null;carrier=null;}
     if(!carrier){carrier=players.find(p=>near(p,o,2));if(carrier)o.carrier=carrier.id;}
     if(carrier){o.x=carrier.x;o.z=carrier.z;
       if(near(carrier,{x:0,z:carrier.team==='blue'?27:-27},3)){
@@ -56,7 +63,7 @@ export function stepObjective(o,players,scores,dt){
     scores.blue=o.progress;o.won=o.progress>=100;
   }
   if(o.id==='crucible'){
-    const own=blue.filter(p=>!p.bot&&p.connected!==false).sort((a,b)=>(a.slot||0)-(b.slot||0))[0];if(!own)return;
+    const own=blue.filter(p=>!p.bot&&p.connected!==false).sort((a,b)=>(a.slot||0)-(b.slot||0))[0];if(!own){o.hold=0;return;}
     if(o.stage===0&&near(own,o,3)&&own.y>.5){o.stage=1;o.x=0;o.z=11;o.text='Cross two low hurdles, then deliver supplies with a teammate (hold 5s)';}
     else if(o.stage===1){
       o.hold=near(own,o,4)&&allies.some(p=>p.id!==own.id&&p.connected!==false)?o.hold+dt:0;
@@ -70,8 +77,8 @@ export function stepObjective(o,players,scores,dt){
   }
 }
 export function useRole(p,players,time){
-  if(p.hp<=0||time<(p.abilityAt||0))return false;
-  const role=ROLES[p.role]?p.role:'rifleman';
+  if(!activeParticipant(p)||time<(p.abilityAt||0))return false;
+  const role=Object.hasOwn(ROLES,p.role)?p.role:'rifleman';
   const allies=players.filter(q=>q.team===p.team&&near(q,p,6));
   if(role==='medic'){
     const injured=allies.filter(q=>q.hp<100);if(!injured.length)return false;

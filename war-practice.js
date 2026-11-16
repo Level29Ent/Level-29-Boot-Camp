@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {practiceConfig,BOT_DIFFICULTIES} from './practice-lab.js';
 import {botPlan,setSquadOrder,objectiveActivity} from './squad-tactics.js';
-import {createObjective,stepObjective,useRole,CRUCIBLE_HURDLES} from './operations.js';
+import {createObjective,stepObjective,useRole,CRUCIBLE_HURDLES,dropIntel,activeParticipant} from './operations.js';
 import {WAR_COVER} from './rules.js';
 
 const blocked=(x,z)=>Math.abs(x)>22||Math.abs(z)>32||WAR_COVER.some(c=>Math.abs(x-c.x)<c.w/2+.5&&Math.abs(z-c.z)<c.d/2+.5);
@@ -46,7 +46,7 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
     let distance=90,result=null;const point=new THREE.Vector3();
     for(const box of boxes){const hit=ray.intersectBox(box,point);if(hit)distance=Math.min(distance,ray.origin.distanceTo(hit));}
     for(const p of state.players){
-      if(p.hp<=0||p.id===shooter.id)continue;
+      if(!activeParticipant(p)||p.id===shooter.id)continue;
       const box=new THREE.Box3(new THREE.Vector3(p.x-.4,p.y,p.z-.4),new THREE.Vector3(p.x+.4,p.y+(p.crouch?1.3:2),p.z+.4));
       const hit=ray.intersectBox(box,point);if(hit&&ray.origin.distanceTo(hit)<distance){distance=ray.origin.distanceTo(hit);result=p;}
     }
@@ -63,7 +63,7 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
     state.events.push({id:++eventId,type:'shot',at:time,from:p.id,team:p.team,x:origin.x,y:origin.y,z:origin.z,tx:end.x,ty:end.y,tz:end.z,hit:!!enemy});
     if(enemy){
       p.hits++;enemy.hp=Math.max(0,enemy.hp-25);
-      if(!enemy.hp){p.kills++;enemy.deaths++;enemy.respawnAt=time+3000;enemy.moving=false;if(state.objective.id==='elimination')state.scores[p.team]++;
+      if(!enemy.hp){dropIntel(state.objective,enemy);p.kills++;enemy.deaths++;enemy.respawnAt=time+3000;enemy.moving=false;if(state.objective.id==='elimination')state.scores[p.team]++;
         state.events.push({id:++eventId,type:'kill',at:time,team:p.team,killer:p.name,victim:enemy.name});}
     }
   }
@@ -72,6 +72,8 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
     if(input.order)setSquadOrder(state,self(),input.order,time);
     for(const p of state.players){
       let info=extra.get(p.id);info.cooldown=Math.max(0,info.cooldown-dt);
+      if(!activeParticipant(p))dropIntel(state.objective,p);
+      if(p.connected===false)continue;
       if(p.hp<=0){if(time>=p.respawnAt){spawn(p);info=extra.get(p.id);}else continue;}
       if(p.reloadAt&&time>=p.reloadAt){p.reloadAt=0;p.ammo=30;}
       if(!p.bot){

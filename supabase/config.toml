@@ -1,0 +1,7 @@
+project_id = "level-29-boot-camp"
+
+# Registration is public; every other action verifies a hashed private recovery
+# code inside the handler. This is NOT an unauthenticated database endpoint.
+[functions.bootcamp-command]
+verify_jwt = false
+entrypoint = "./functions/bootcamp-command/index.ts"

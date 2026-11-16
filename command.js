@@ -5,7 +5,7 @@ import {ACHIEVEMENTS,COSMETICS,dailyChallenges,dayKey,rankFor,rankProgress,RANKS
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function initCommand(api){
-  let selected='orders',loading=false,stylePage=0,authBusy=false;
+  let selected='orders',loading=false,stylePage=0,authBusy=false,styleSaving=false;
   const loginVisible=()=>$('playerLogin').classList.contains('hidden')===false;
   const pageSize=10;
   const status=(s)=>{$('commandStatus').textContent=s;};
@@ -37,11 +37,11 @@ export function initCommand(api){
     const palette=$('avatarPalette').value,category=$('avatarCategory').value;
     const styles=AVATAR_STYLES.filter(style=>(!palette||style.palette.id===palette)&&(!category||style.pattern.category===category));
     const pages=Math.max(1,Math.ceil(styles.length/pageSize));stylePage=Math.max(0,Math.min(stylePage,pages-1));
-    const current=selectedStyle();
-    $('avatarSelected').textContent=current?'Selected: '+styleFor(current).name+' · Browser-local appearance.':'Using your cloud Armory kit. Select a free style below to override its appearance on this device.';
+    const current=selectedStyle()??cloud.profile?.style;
+    $('avatarSelected').textContent=current?'Selected: '+styleFor(current).name+' · '+(cloud.profile?.style===current?'Saved online for next deployment.':'Local appearance (sign in and select to sync).'):'Using your cloud Armory kit. Select a free style below to override its appearance on this device.';
     $('avatarPage').textContent='Page '+(stylePage+1)+' of '+pages+' · '+styles.length+' styles';
     $('avatarPrev').disabled=stylePage===0;$('avatarNext').disabled=stylePage===pages-1;
-    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><p>${style.pattern.material} · ${style.pattern.category}</p><button class="btn" data-preview="${style.id}">View in 3D</button><button class="btn" data-style="${style.id}" ${style.id===current?'disabled':''}>${style.id===current?'Selected':'Use this style'}</button></article>`).join('')||'<p class="race-fine">No styles match these filters. Try Mascots for the Signature collection.</p>';
+    $('avatarStyles').innerHTML=styles.slice(stylePage*pageSize,(stylePage+1)*pageSize).map(style=>`<article class="order-card ${style.id===current?'order-ready':''}">${stylePreview(style)}<h3>${style.name}</h3><p>${style.pattern.material} · ${style.pattern.category}</p><button class="btn" data-preview="${style.id}">View in 3D</button><button class="btn" data-style="${style.id}" ${styleSaving||style.id===current&&(!cloud.profile||cloud.profile.style===current)?'disabled':''}>${style.id===current?cloud.profile&&cloud.profile.style!==current?'Sync this style':'Selected':'Use this style'}</button></article>`).join('')||'<p class="race-fine">No styles match these filters. Try Mascots for the Signature collection.</p>';
   }
   $('avatarPalette').innerHTML='<option value="">All palettes / '+AVATAR_STYLES.length+' styles</option><option value="signature">Signature / Jester Mascot</option>'+STYLE_PALETTES.map(p=>`<option value="${p.id}">${p.name} / 10 designs</option>`).join('');
   $('avatarCategory').innerHTML='<option value="">All clothing types</option>'+STYLE_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -50,9 +50,18 @@ export function initCommand(api){
   $('avatarPrev').onclick=()=>{stylePage--;renderStyles();};
   $('avatarNext').onclick=()=>{stylePage++;renderStyles();};
   function previewStyle(id){window.dispatchEvent(new CustomEvent('b29:avatar-preview',{detail:{id}}));}
-  function chooseStyle(id){
+  async function chooseStyle(id){
+    if(styleSaving)return;
     const result=selectStyle(id);if(!result.ok)return;
     renderStyles();previewStyle(id);
+    if(cloud.profile){
+      styleSaving=true;renderStyles();
+      $('avatarSaveStatus').textContent='Saving online appearance…';
+      try{await cloud.mutate('appearance',{style:id});$('avatarSaveStatus').textContent='Online appearance saved. Other players see it on your next deployment.';}
+      catch(e){$('avatarSaveStatus').textContent='Local appearance selected; online sync failed: '+e.message;}
+      finally{styleSaving=false;renderStyles();}
+      return;
+    }
     $('avatarSaveStatus').textContent=result.saved?'Appearance saved on this device. Your next deployment uses this style.':'Appearance selected for this session only: browser storage is unavailable.';
   }
   $('avatarStyles').addEventListener('click',e=>{const button=e.target.closest('[data-style]'),preview=e.target.closest('[data-preview]');if(button)chooseStyle(button.dataset.style);if(preview)previewStyle(preview.dataset.preview);});
@@ -64,7 +73,7 @@ export function initCommand(api){
     $('rankLadder').innerHTML=RANKS.map((name,i)=>`<div class="rank-step ${p&&i===rank.index?'current-rank':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${name}<small>${(i*1000).toLocaleString()} XP${p&&i===rank.index?' · YOUR RANK':''}</small></span></div>`).join('');
     $('serviceLoadouts').innerHTML=COSMETICS.map(item=>`<article class="order-card">${avatarPreview(item)}<h3>${item.name}</h3><p>${item.desc}</p><strong>${p?.equipped===item.id?'EQUIPPED':p?.inventory.includes(item.id)?'OWNED':item.price?item.price+' FIELD CASH':'STANDARD ISSUE'}</strong></article>`).join('');
   }
-  $('btnService').onclick=()=>{api.stopModes();api.setMode('service');api.show('service');renderService();previewStyle(selectedStyle()||AVATAR_STYLES[0].id);};
+  $('btnService').onclick=()=>{api.stopModes();api.setMode('service');api.show('service');renderService();previewStyle(selectedStyle()??cloud.profile?.style??AVATAR_STYLES[0].id);};
   $('serviceBack').onclick=api.title;
   $('serviceManage').onclick=()=>{selected='armory';open();};
   function render(){
@@ -91,7 +100,7 @@ export function initCommand(api){
     $('claimDaily').disabled=claimed||!daily.eligible;
     $('claimDaily').textContent=claimed?'Collected today':daily.eligible?'Collect daily cash':'Play a match first';
     $('dailyDescription').textContent=claimed?'Your daily cash is saved. Come back after the next UTC reset.':
-      'Complete one race or war match with at least 20 seconds of active play to collect today’s bonus.';
+      'Complete one War match with at least 20 seconds of active play to collect today’s bonus.';
     $('dailyReset').textContent='UTC reset · '+date+' · consecutive-day bonus up to +250 FC';
     $('dailyOrders').innerHTML=dailyChallenges(date).map(a=>card(a,daily,'challenge:'+date+':'+a.id,'challenge')).join('');
     $('accomplishmentGrid').innerHTML=ACHIEVEMENTS.map(a=>card(a,p.stats,'achievement:'+a.id,'achievement')).join('');

@@ -64,7 +64,7 @@ export function initRace(api){
     const button=$('raceCloudSolo');button.disabled=true;status('Connecting to optional cloud race…');
     try{
       leave();await cloud.ensure(name());
-      room=await request('',{name:name(),course:nextCourse()});r.online=true;
+      room=await request('',{name:name(),course:nextCourse()});token=room.me;r.online=true;
       const state=await request('/'+room.code+'/start',{});applyState(state);poll();
     }catch(e){status(e.message);}finally{button.disabled=false;}
   };
@@ -75,7 +75,7 @@ export function initRace(api){
     try{
       leave();await cloud.ensure(name());
       const state=await request('',{name:name(),course:nextCourse()});
-      token=state.token;room=state;r.online=true;showRoom();poll();
+      token=state.me;room=state;r.online=true;showRoom();poll();
     }
     catch(e){status(e.message);}finally{b.disabled=false;}
   };
@@ -83,14 +83,14 @@ export function initRace(api){
     const code=$('roomCode').value.trim().toUpperCase();
     if(!/^[A-F0-9]{6}$/.test(code)){status('Enter the six-character room code from your friend.');return;}
     const b=$('joinRoom');b.disabled=true;status('Joining room…');
-    try{leave();const state=await request('/'+code+'/join',{name:name()});token=state.token;room=state;r.online=true;r.course=state.course;showRoom();poll();}
+    try{leave();const state=await request('/'+code+'/join',{name:name()});token=state.me;room=state;r.online=true;r.course=state.course;showRoom();poll();}
     catch(e){status(e.message);}finally{b.disabled=false;}
   };
   function showRoom(){
     api.setMode('raceLobby');api.show('raceLobby');
     $('lobbyCode').textContent=room.code;
     $('lobbyCourse').textContent='SHUFFLED COURSE / REVEALED AT DEPLOYMENT';
-    $('roomNotice').textContent='Send friends this app link and room code. Up to six human racers; bots fill eight starting slots. Rooms and rewards are stored in the cloud.';
+    $('roomNotice').textContent='Send friends this app link and room code. Up to six human racers; bots fill eight starting slots. Room state is stored in the cloud. These races are unranked and award no cash or XP.';
     refreshLobby();
   }
   function refreshLobby(){
@@ -293,17 +293,16 @@ export function initRace(api){
     ended=true;r.elapsed=RACE_DURATION;api.clearKeys();audio.stop();
     $('raceBoard').classList.add('hidden');$('raceCountdown').classList.add('hidden');
     api.setMode('result');api.show('raceResult');drawResults();
-    $('raceRewardText').textContent=r.online?'Saving match earnings…':'Local practice complete · No cloud cash or XP. Your callsign, training progress and style stay in this browser.';
+    $('raceRewardText').textContent=r.online?'Unranked online race · no cash or XP.':'Local practice complete · No cloud cash or XP. Your callsign, training progress and style stay in this browser.';
     if(r.online){
       stopPolling();const code=room.code;
       setTimeout(async()=>{
         try{
           const state=await request('/'+code);
           if(room?.code===code){room=state;drawResults();}
-          const p=await cloud.refresh(),reward=p.claims.find(c=>c.source==='match:'+code);
-          $('raceRewardText').textContent=reward?'+'+reward.cash+' Field Cash · +'+reward.xp+' XP saved. Check Command for daily cash and accomplishments.':
-            'No cash awarded: matches need at least 20 seconds of active movement. Finishing and wins earn extra.';
-        }catch(e){$('raceRewardText').textContent='Reward sync pending: '+e.message;}
+          await cloud.refresh();
+          $('raceRewardText').textContent='Unranked race complete. Client-reported race positions never award cash, XP or daily eligibility.';
+        }catch(e){$('raceRewardText').textContent='Online race refresh failed: '+e.message;}
       },1000);
     }
     api.vo('complete1');

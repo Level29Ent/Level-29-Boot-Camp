@@ -30,7 +30,7 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
     practiceConfig:config,duration:config.duration,orders:{},objective:createObjective(operation),serverNow:now(),scores:{blue:0,red:0},events:[],players:[]};
   if(state.objective.id==='elimination')state.objective.text='First squad to '+config.target+' eliminations';
   const extra=new Map();
-  function spawn(p){p.x=(p.slot%5-2)*3;p.y=0;p.z=p.team==='blue'?27:-27;p.yaw=p.team==='blue'?0:Math.PI;p.hp=100;p.ammo=30;p.reloadAt=0;p.respawnAt=0;p.crouch=false;p.moving=false;extra.set(p.id,{cooldown:0,route:[],velocity:0});}
+  function spawn(p){delete p.memory;p.behavior='Ready';p.x=(p.slot%5-2)*3;p.y=0;p.z=p.team==='blue'?27:-27;p.yaw=p.team==='blue'?0:Math.PI;p.hp=100;p.ammo=30;p.reloadAt=0;p.respawnAt=0;p.crouch=false;p.moving=false;extra.set(p.id,{cooldown:0,route:[],routeRetry:0,velocity:0});}
   for(let i=0;i<10;i++){
     const p={id:i?'practice-bot-'+i:'local-you',name:i?'AI '+(i<5?'Alpha '+i:'Bravo '+(i-4)):name,
       role:i?'rifleman':role,abilityAt:0,support:0,shots:0,hits:0,slot:i,team:i<5?'blue':'red',bot:i!==0,connected:true,kills:0,deaths:0,equipped:i?'recruit':equipped,...(!i&&Number.isFinite(xp)?{xp}:{} )};
@@ -71,8 +71,8 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
     if(ended||time<state.startsAt)return;
     if(input.order)setSquadOrder(state,self(),input.order,time);
     for(const p of state.players){
-      const info=extra.get(p.id);info.cooldown=Math.max(0,info.cooldown-dt);
-      if(p.hp<=0){if(time>=p.respawnAt)spawn(p);else continue;}
+      let info=extra.get(p.id);info.cooldown=Math.max(0,info.cooldown-dt);
+      if(p.hp<=0){if(time>=p.respawnAt){spawn(p);info=extra.get(p.id);}else continue;}
       if(p.reloadAt&&time>=p.reloadAt){p.reloadAt=0;p.ammo=30;}
       if(!p.bot){
         p.yaw=Number.isFinite(input.yaw)?input.yaw:p.yaw;p.crouch=!!input.crouch;
@@ -90,7 +90,7 @@ export function createWarPractice(name,{now=()=>Date.now(),random=Math.random,eq
           if(time>=info.readyAt){const spread=(random()-.5)*(opponent?difficulty.spread:.08);fire(p,p.yaw+spread,Math.atan2(-.3,dist)+spread*.25,time);}}}
         if(!enemy){info.target=null;info.readyAt=0;}
         if(Math.hypot(destination.x-p.x,destination.z-p.z)<1.8){p.moving=false;continue;}
-        if(!info.route.length||botClock<=0)info.route=pathTo(p,destination);
+        if((!info.route.length&&time>=info.routeRetry)||botClock<=0){info.route=pathTo(p,destination);info.routeRetry=time+300;}
         const waypoint=info.route[0];if(waypoint){const x=waypoint.x-p.x,z=waypoint.z-p.z;if(Math.hypot(x,z)<.25)info.route.shift();else advance(p,x,z,p.team==='red'?difficulty.speed:3,dt);}
 
       }

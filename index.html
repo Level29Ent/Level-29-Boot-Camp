@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="./war.css" />
 <link rel="stylesheet" href="./mout.css" />
 <link rel="stylesheet" href="./presentation.css" />
+<link rel="stylesheet" href="./hud-layout.css" />
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
@@ -340,7 +341,7 @@
     <div id="warCountdown" class="hidden">3</div>
     <div id="warRespawn" class="hidden"><strong>REGROUPING</strong><p>Back in the fight in <b id="warRespawnTime">3</b></p></div>
   </div>
-  <div id="warScores" class="hidden"><div class="war-score-header"><h3>LIVE SQUAD REPORT</h3><button id="warScoresClose">Close</button></div><div class="war-team-grid"><div><h3 class="blue">ALPHA / K / D</h3><div id="warScoreBlue"></div></div><div><h3 class="red">BRAVO / K / D</h3><div id="warScoreRed"></div></div></div></div>
+  <div id="warScores" class="hidden" role="dialog" aria-modal="true" aria-label="Live squad report and tactical overview"><div class="war-score-header"><h3>LIVE SQUAD REPORT</h3><button id="warScoresClose">Close</button></div><div class="war-team-grid"><div><h3 class="blue">ALPHA / K / D</h3><div id="warScoreBlue"></div></div><div><h3 class="red">BRAVO / K / D</h3><div id="warScoreRed"></div></div></div></div>
   <section id="playerLogin" class="screen hidden">
     <div class="sheet narrow login-sheet">
       <div class="brief-phase">PLAY FIRST / CLOUD SAVE OPTIONAL</div><h2 class="sheet-title">READY TO PLAY.</h2>

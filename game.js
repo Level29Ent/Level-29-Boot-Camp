@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {initHudLayout} from './hud-layout.js';
 import {beginMantle,stepMantle} from './traversal.js';
 import {initMissionBoard} from './mission-board.js';
 import {dailyTraining,readCareer,recordCareer,afterAction} from './career.js';
@@ -262,7 +263,7 @@ $('c').addEventListener('contextmenu',e=>e.preventDefault());let dragging=false,
 $('c').addEventListener('pointerdown',e=>{if(mode!=='playing')return;dragging=true;dragTravel=0;dragStart={x:e.clientX,y:e.clientY};$('c').setPointerCapture(e.pointerId);if(e.button===2)keyDown('k');});
 $('c').addEventListener('pointermove',e=>{if(mode!=='playing')return;if(mout?.active&&mout.pointerMove(e))return;if(war?.active&&war.pointerMove(e))return;const kind=activeLevel().kind;if(aiming()){if(e.pointerType==='mouse'){rangeX=-(e.clientX/innerWidth-.5)*.8*lookGain();rangeY=.012-(e.clientY/innerHeight-.5)*.36*lookGain();}else if(dragging){rangeX=THREE.MathUtils.clamp(rangeX-(e.clientX-dragStart.x)*.0018*lookGain(),-.42,.42);rangeY=THREE.MathUtils.clamp(rangeY-(e.clientY-dragStart.y)*.0015*lookGain(),-.22,.22);}}else if(dragging){yaw-=(e.clientX-dragStart.x)*.007*(presentation?.settings.sensitivity||1);pitch=THREE.MathUtils.clamp(pitch+(e.clientY-dragStart.y)*.003*(presentation?.settings.sensitivity||1),-.06,.6);}if(dragging){dragTravel+=Math.abs(e.clientX-dragStart.x)+Math.abs(e.clientY-dragStart.y);dragStart={x:e.clientX,y:e.clientY};}});
 $('c').addEventListener('pointercancel',()=>{dragging=false;keys.k=false;});
-$('c').addEventListener('pointerup',e=>{if(mode==='playing'&&dragTravel<8&&e.button===0&&(aiming()||activeLevel().kind==='combat'))edges.j=true;keys.k=false;dragging=false;});
+$('c').addEventListener('pointerup',e=>{if(mode==='playing'&&dragTravel<8&&e.button===0&&!war?.active&&!mout?.active&&(aiming()||activeLevel().kind==='combat'))edges.j=true;keys.k=false;dragging=false;});
 let joy={x:0,y:0,on:false,src:''},joyDir='',padKeys={},padPrev=[],padNav=0,padSeen=false;
 function setJoy(x,y,src){const m=Math.hypot(x,y);if(m<.14){if(joy.src===src||!joy.on)joy={x:0,y:0,on:false,src:''};}else{const k=m>1?1/m:1;joy={x:x*k,y:y*k,on:true,src};}
  const dir=m<.55?'':Math.abs(x)>Math.abs(y)?(x>0?'d':'a'):(y>0?'s':'w');if(dir!==joyDir){if(joyDir)keys[joyDir]=false;if(dir)keyDown(dir);joyDir=dir;}}
@@ -294,7 +295,7 @@ function mobileUI(){const tc=document.createElement('div');tc.id='touchControls'
  const jend=e=>{if(e.pointerId!==jid)return;jid=null;jb.classList.remove('active');kn.style.transform='';setJoy(0,0,'touch');};
  jb.addEventListener('pointerup',jend);jb.addEventListener('pointercancel',jend);
  if(matchMedia('(pointer: coarse)').matches)tc.classList.add('enabled');
- const jt=document.createElement('button');jt.id='joyBtn';jt.className='global-button';const jl=()=>jt.textContent=tc.classList.contains('enabled')?'JOYSTICK ON':'JOYSTICK OFF';jl();jt.onclick=()=>{tc.classList.toggle('enabled');jl();jt.blur();};$('app').appendChild(jt);
+ const jt=document.createElement('button');jt.id='joyBtn';jt.className='global-button';const jl=()=>jt.textContent=tc.classList.contains('enabled')?'STICK ON':'STICK OFF';jl();jt.onclick=()=>{tc.classList.toggle('enabled');jl();jt.blur();};$('app').appendChild(jt);
 const a=document.createElement('button');a.id='audioBtn';a.textContent='SOUND ON';a.className='global-button';a.onclick=()=>{muted=!muted;if(muted)voStop();a.textContent=muted?'SOUND OFF':'SOUND ON';};$('app').appendChild(a);}
 mobileUI();
 function completeCheckpoint(){feedback('checkpoint');const c=checkpoints[stage];if(c){c.ring.visible=c.arrow.visible=false;stage++;score+=100;if(activeLevel().kind==='receive'&&stage===2){swapPlayer('recruit',{cover:true});say('UTILITIES ISSUED','good',1);}if(activeLevel().kind==='receive'&&stage===3)swapPlayer('recruit',{cover:true,pack:true});tone(600,.1);setActiveMarker();if(stage>=checkpoints.length){if(idx===7)vo('g_congrats');score+=Math.max(0,Math.floor((activeLevel().limit-time)*3));finish(true);}else{say('CHECKPOINT '+stage+' COMPLETE','good',1);const nx=checkpoints[stage];if(nx?.vo){voQ=[];vo(nx.vo,'queue');}if(nx?.timed)nx.t0=0;}}}
@@ -358,4 +359,4 @@ window.__race=race;
 window.__war=war;
 window.__mout=mout;
 initMissionBoard({stopModes:()=>{mout.exit();war.exit();race.exit();},setMode:m=>{mode=m;},show:showScreen,title,playTraining:id=>brief(id)});
-buildLevel(0);title();initWardrobeView();window.appReady=true;
+initHudLayout();buildLevel(0);title();initWardrobeView();window.appReady=true;

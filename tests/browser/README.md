@@ -23,3 +23,14 @@ Use the supported Playwright browser for your OS. Do not disable browser securit
 - Urban check walks the courtyard, breaches doors, shoots actual raycast targets in both connected rooms, reloads, climbs the physical exterior stair/landing, clears roof targets and reaches extraction. A test-only hook supplies camera heading/aim but never position. It verifies a separate urban record, no container medal/progress, and mobile menu overflow.
 
 Real WebGL screenshots, storage/request-delay tests and real-device/hosted checks are separate; see `RELEASE-CHECKLIST.md`.
+
+
+HUD/input regression checks (same server and external-tooling setup):
+
+```sh
+NODE_PATH=/tmp/bootcamp-browser-check/node_modules node tests/browser/hud-war-mout.cjs
+NODE_PATH=/tmp/bootcamp-browser-check/node_modules node tests/browser/hud-campaign-race.cjs
+NODE_PATH=/tmp/bootcamp-browser-check/node_modules node tests/browser/local-response.cjs
+```
+
+These measure actual visible panel/reticle rectangles and assert no >2px intersections or offscreen rectangles among the listed selectors at 1280×800, 390×844, 844×390, 320×568, 568×320, 667×375 and 1024×600, with touch controls enabled. Intentional overlays (dialogs/countdown/respawn) are excluded. Lists live in the script so failures identify which two regions collide. They are renderer-stub layout assertions, not screenshots or universal proof for every text/font/zoom/device. The local-response check asserts player movement and ammo change within one 16ms simulation step, tactical-score pause/escape behavior and input isolation in pause/options.

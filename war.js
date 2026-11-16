@@ -129,9 +129,9 @@ export function initWar(api){
     try{apply(await request('room_start',{code:w.room.code}));}
     catch(e){if(!e.staleSession){$('warLobbyNote').textContent=e.message;renderLobby();}}
   };
-  function poll(){stop();timer=setInterval(pollOnce,200);}
+  function poll(){stop();if(!practice)timer=setInterval(pollOnce,200);}
   async function pollOnce(){
-    if(busy||!w.room||ended)return;busy=true;const code=w.room.code,ticket=lifecycle.current();
+    if(busy||!w.room||ended||practice)return;busy=true;const code=w.room.code,ticket=lifecycle.current();
     try{
       const payload={...lastInput,seq:++seq,code};pendingJump=pendingReload=pendingFire=pendingAbility=false;pendingOrder=null;
       const state=await request(w.active?'war_input':'room_state',payload);
@@ -241,8 +241,10 @@ export function initWar(api){
   };
   $('warStay').onclick=()=>{api.show(null);api.setMode('playing');api.clearKeys();};
   $('warLeaveConfirm').onclick=w.open;
-  $('warShowScores').onclick=()=>$('warScores').classList.toggle('hidden');
-  $('warScoresClose').onclick=()=>$('warScores').classList.add('hidden');
+  function closeScores(){if($('warScores').classList.contains('hidden'))return;$('warScores').classList.add('hidden');api.setMode('playing');api.clearKeys();$('warShowScores').focus();}
+  $('warShowScores').onclick=()=>{if(!w.active||ended)return;if(!$('warScores').classList.contains('hidden')){closeScores();return;}lastInput={};pendingOrder=null;pendingJump=pendingReload=pendingFire=pendingAbility=false;fireMouse=false;api.clearKeys();api.setMode('warScores');$('warScores').classList.remove('hidden');if(document.pointerLockElement===api.canvas)document.exitPointerLock();$('warScoresClose').focus();};
+  $('warScoresClose').onclick=closeScores;
+  $('warScores').addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();e.preventDefault();closeScores();}if(e.key==='Tab'){e.preventDefault();$('warScoresClose').focus();}});
   $('warAgain').onclick=w.open;
   $('warResultCommand').onclick=()=>{w.exit();api.openCommand();};
   $('warResultTitleBack').onclick=()=>{w.exit();api.title();};
@@ -255,17 +257,18 @@ export function initWar(api){
   w.pointerMove=e=>{
     if(document.pointerLockElement!==api.canvas)return false;
     const {yaw,pitch}=api.look();
-    api.setLook(yaw-e.movementX*.003*(api.settings?.().sensitivity||1),Math.max(-.65,Math.min(.9,pitch+e.movementY*.002*(api.settings?.().sensitivity||1))));
+    api.setLook(yaw-e.movementX*.003*(api.settings?.().sensitivity||1)*(api.input().keys.k ? .55 : 1),Math.max(-.65,Math.min(.9,pitch+e.movementY*.002*(api.settings?.().sensitivity||1)*(api.input().keys.k ? .55 : 1))));
     return true;
   };
   window.addEventListener('blur',()=>{fireMouse=false;});
   w.pause=()=>{
     if(!w.active)return;
+    if(api.mode()==='warScores'){closeScores();return;}
     if(api.mode()==='playing')$('warLeave').click();else if(api.mode()==='warExit')$('warStay').click();
   };
   w.update=dt=>{
     if(!w.active||ended)return;
-    if(practice&&api.mode()==='playing')practiceClock+=dt*1000;
+    if(practice){if(api.mode()!=='playing')return;practiceClock+=dt*1000;}
     const input=api.input(),playing=api.mode()==='playing';
     let {yaw,pitch}=api.look();
     if(playing){
@@ -312,7 +315,10 @@ export function initWar(api){
     lastInput={dx:active?worldX:0,dz:active?worldZ:0,yaw:view.yaw,pitch:view.pitch,
       fire:active&&!!(input.keys.j||pendingFire||fireMouse),jump:active&&pendingJump,
       ...(w.room.objective?{ability:active&&pendingAbility,...(active&&pendingOrder?{order:pendingOrder}:{})}:{}),crouch:active&&!!input.keys.c,sprint:active&&!!input.keys.shift,reload:active&&!!(input.keys.r||pendingReload)};
-    if(input.edges[' ']||input.edges.r||input.edges.e)pollOnce();
+    if(practice){
+      const state=practice.update(lastInput);pendingJump=pendingReload=pendingFire=pendingAbility=false;pendingOrder=null;
+      apply(state);$('warNetwork').textContent='LOCAL PRACTICE · NO CLOUD REWARDS';if(ended)return;
+    }else if(input.edges[' ']||input.edges.r||input.edges.e)pollOnce();
     for(const t of tracers)t.age+=dt;
     tracers=tracers.filter(t=>{if(t.age>.14){api.world.remove(t.line);t.line.geometry.dispose();t.line.material.dispose();return false;}return true;});
     audio.tick(dt,api.muted());
@@ -321,6 +327,9 @@ export function initWar(api){
   };
   function renderUi(){
     const room=w.room,own=me();if(!own)return;
+    $('scorePractice').textContent=practice?practiceSummary(room.practiceConfig,room.objective?.id):'Online '+room.mode;
+    $('scoreConnection').textContent=$('warNetwork').textContent;
+    $('scoreAllies').textContent=room.players.filter(p=>p.team===own.team&&p.bot).map(p=>p.name+': '+allyStatus(p,now())).join(' · ');
     const objective=room.objective||null;
     const captain=room.players.filter(p=>p.team===own.team&&!p.bot&&p.connected!==false).sort((a,b)=>a.slot-b.slot)[0];
     $('squadOrderStatus').textContent=(captain?.id===own.id?'SQUAD LEADER':'LEADER: '+(captain?.name||'None'))+' · '+(room.orders?.[own.team]?.kind||'push').toUpperCase();
